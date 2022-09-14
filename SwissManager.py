@@ -36,6 +36,7 @@ class StandingsRow():
                                            height=CELL_HEIGHT,
                                            facecolor='none', 
                                            lw=0.5, 
+                                           zorder=3, 
                                            edgecolor='none')
         self.ax.add_artist(self.box_seed)
         x, y = self._get_center(self.box_seed)
@@ -47,6 +48,7 @@ class StandingsRow():
                                            height=CELL_HEIGHT,
                                            facecolor='none', 
                                            lw=0.5, 
+                                           zorder=3, 
                                            edgecolor='none')
         self.ax.add_artist(self.box_name)
         x, y = self._get_center(self.box_name)
@@ -58,6 +60,7 @@ class StandingsRow():
                                              height=CELL_HEIGHT,
                                              facecolor='none', 
                                              lw=0.5, 
+                                             zorder=3, 
                                              edgecolor='none')
         self.ax.add_artist(self.box_rating)
         x, y = self._get_center(self.box_rating)
@@ -71,6 +74,7 @@ class StandingsRow():
                                                             facecolor='none', 
                                                             lw=1.5, 
                                                             edgecolor='none', 
+                                                            zorder=3, 
                                                             label='button_remove_player_%i'%(idx+1))
         x, y = self._get_center(self.button_remove_player)
         self.text_x = self.ax.text(x, y, 'x', ha='center', va='center', size=12, color='none', weight='bold')
@@ -98,14 +102,29 @@ class SwissManager(object):
         self.ax.set_label('main')
         self.ax.set_zorder(0)
         self.ax.axis([0, 1, 0, 1])
-        self.ax.axhline(0.9, color='k', lw=2)
+        self.ax.axhline(0.9, color='k', lw=2, zorder=1)
+
+        ###  adding whitspace to deliniate tabs
+        self.whitespace = patches.Rectangle([-0.01, -0.01], 
+                                             width=1.02, 
+                                             height=0.907, 
+                                             fc='w', 
+                                             lw=0, 
+                                             zorder=3)
+        self.ax.add_artist(self.whitespace)
 
         ###  establishing interactive connections
         cid0 = self.fig.canvas.mpl_connect('button_press_event', self._onClick)
         cid1 = self.fig.canvas.mpl_connect('key_press_event', self._onKeyPress)
 
+
         ###  button params
         self.list_buttons = []
+
+
+        ###  flag to determine which display the user is currently viewing
+        ###  ['registration', start_round_1_prompt', 'standings', 'round_i']
+        self.active_display = 'registration'
 
 
 
@@ -143,15 +162,18 @@ class SwissManager(object):
 
 
         ###  standings button
-        self.button_standings = patches.FancyBboxPatch([0.03, 0.93], 
+        self.button_standings = patches.FancyBboxPatch([0.03, 0.9], 
                                                         width=BUTTON_WIDTH, 
-                                                        height=BUTTON_HEIGHT, 
+                                                        height=BUTTON_HEIGHT+0.03, 
                                                         boxstyle=patches.BoxStyle('round', pad=0.01), 
-                                                        facecolor='none', 
+                                                        facecolor='w', 
                                                         lw=2, 
+                                                        ec='k', 
+                                                        zorder=2, 
                                                         label='button_standings')
+
         x, y = self._get_center(self.button_standings)
-        self.text_button_standings = self.ax.text(x, y, 'Standings', ha='center', va='center', size=14, weight='bold')
+        self.text_button_standings = self.ax.text(x, y, 'Registration', ha='center', va='center', size=14, weight='bold')
         self.list_buttons.append(self.button_standings)
         self.active_button = self.button_standings
         self.ax.add_artist(self.button_standings)
@@ -178,6 +200,7 @@ class SwissManager(object):
                                                         boxstyle=patches.BoxStyle('round', pad=0.005), 
                                                         facecolor='none', 
                                                         lw=2, 
+                                                        zorder=3, 
                                                         label='button_add_player')
         self.ax.text(0.055, 0.815, '+', ha='center', va='center', size=20, weight='bold')
         self.ax.add_artist(self.button_add_player)
@@ -189,6 +212,7 @@ class SwissManager(object):
                                                         facecolor='none', 
                                                         lw=2, 
                                                         edgecolor='k', 
+                                                        zorder=3, 
                                                         label='button_add_player_name')
         self.ax.text(0.12, 0.85, 'Player Name', size=12, style='italic')
         self.ax.add_artist(self.button_add_player_name)
@@ -204,6 +228,7 @@ class SwissManager(object):
                                                           facecolor='none', 
                                                           lw=2, 
                                                           edgecolor='k', 
+                                                          zorder=3, 
                                                           label='button_add_player_rating')
         self.ax.text(0.4, 0.85, 'Rating', size=12, style='italic')
         self.ax.add_artist(self.button_add_player_rating)
@@ -220,7 +245,8 @@ class SwissManager(object):
             print('standings')
 
 
-        if self._was_clicked(self.button_add_player, event):
+        ###  Registraion: add player
+        if (self.active_display == 'registration') and (self._was_clicked(self.button_add_player, event)):
 
             ###  pass if no new name or rating is provided
             if self.new_player_name == '':
@@ -243,29 +269,114 @@ class SwissManager(object):
                 self._redraw()
 
 
-
-
-
-
-        if self._was_clicked(self.button_add_player_name, event):
+        ###  Registraion: add player name
+        if (self.active_display == 'registration') and (self._was_clicked(self.button_add_player_name, event)):
             self.active_button = self.button_add_player_name
             self.active_button.set_facecolor('#ffffb3')
             self.button_add_player_rating.set_facecolor('w')
             self._redraw()
 
-        if self._was_clicked(self.button_add_player_rating, event):
+
+        ###  Registraion: add player rating
+        if (self.active_display == 'registration') and (self._was_clicked(self.button_add_player_rating, event)):
             self.active_button = self.button_add_player_rating
             self.active_button.set_facecolor('#ffffb3')
             self.button_add_player_name.set_facecolor('w')
             self._redraw()
 
-        for row in self.list_standings_rows:
 
-            ###  remove if button is clicked and row is occupied
-            if self._was_clicked(row.button_remove_player, event) and (row.idx < self.participants.n_participants):
-                self.participants.remove_participant(row.idx)
-                self._redraw_standings_table()
-                self._redraw()
+        ###  Registraion: remove player
+        if self.active_display == 'registration':
+            for row in self.list_standings_rows:
+
+                ###  remove if button is clicked and row is occupied
+                if self._was_clicked(row.button_remove_player, event) and (row.idx < self.participants.n_participants):
+                    self.participants.remove_participant(row.idx)
+                    self._redraw_standings_table()
+                    self._redraw()
+
+
+        ###  starting round 1
+        if (self.active_display == 'registration') and (self._was_clicked(self.button_start_round_1, event)):
+
+            ###  confirmation prompt
+            self.ax.fill_between([0, 1], 0, 1, color='w', alpha=0.75, zorder=5)
+
+            self.prompt_box = patches.FancyBboxPatch([0.3, 0.3], 
+                                                 width=0.4, 
+                                                 height=0.4, 
+                                                 boxstyle=patches.BoxStyle('round', pad=0.02), 
+                                                 facecolor='w', 
+                                                 lw=4, 
+                                                 ec='k', 
+                                                 zorder=5)
+            x, y = self._get_center(self.prompt_box)
+            self.ax.text(x, y+0.08, 'Ready to start Round 1 ?', size=18, ha='center', va='bottom', weight='bold', zorder=6)
+            self.ax.text(x, y, 'Currently %i participants' % self.participants.n_participants, size=14, color='#666666', ha='center', va='bottom', zorder=6)
+
+            self.prompt_box_yes = patches.FancyBboxPatch([0.35, 0.35], 
+                                                     width=0.12, 
+                                                     height=0.08, 
+                                                     boxstyle=patches.BoxStyle('round', pad=0.01), 
+                                                     facecolor='w', 
+                                                     lw=2, 
+                                                     ec='k', 
+                                                     zorder=5)
+            x, y = self._get_center(self.prompt_box_yes)
+            self.ax.text(x, y, 'Yes', size=18, ha='center', va='center', weight='bold', zorder=6)
+
+            self.prompt_box_no = patches.FancyBboxPatch([0.53, 0.35], 
+                                                    width=0.12, 
+                                                    height=0.08, 
+                                                    boxstyle=patches.BoxStyle('round', pad=0.01), 
+                                                    facecolor='w', 
+                                                    lw=2, 
+                                                    ec='k', 
+                                                    zorder=5)
+            x, y = self._get_center(self.prompt_box_no)
+            self.ax.text(x, y, 'No', size=18, ha='center', va='center', weight='bold', zorder=6)
+
+            self.ax.add_artist(self.prompt_box)
+            self.ax.add_artist(self.prompt_box_yes)
+            self.ax.add_artist(self.prompt_box_no)
+            self.active_display = 'start_round_1_prompt'
+            self._redraw()
+
+
+        ###  starting round 1: YES
+        if (self.active_display == 'start_round_1_prompt') and (self._was_clicked(self.prompt_box_yes, event)):
+            print('CLICKED YES')
+
+            self.ax.collections[-1].remove()
+            self.ax.patches[-1].remove()
+            self.ax.patches[-1].remove()
+            self.ax.patches[-1].remove()
+            self.ax.texts[-1].remove()
+            self.ax.texts[-1].remove()
+            self.ax.texts[-1].remove()
+            self.ax.texts[-1].remove()
+            self.active_display = 'round_1'
+            self.active_display = 'registration'
+            self._redraw()
+
+
+        ###  starting round 1: YES
+        if (self.active_display == 'start_round_1_prompt') and (self._was_clicked(self.prompt_box_no, event)):
+            print('CLICKED NO')
+
+            self.ax.collections[-1].remove()
+            self.ax.patches[-1].remove()
+            self.ax.patches[-1].remove()
+            self.ax.patches[-1].remove()
+            self.ax.texts[-1].remove()
+            self.ax.texts[-1].remove()
+            self.ax.texts[-1].remove()
+            self.ax.texts[-1].remove()
+            self.active_display = 'registration'
+            self._redraw()
+
+
+
 
 
 
@@ -326,8 +437,6 @@ class SwissManager(object):
                 self.text_new_player_rating.set_text('')
                 self._redraw_standings_table()
                 self._redraw()
-
-
 
 
     def _was_clicked(self, button, event):
