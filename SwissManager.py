@@ -89,24 +89,26 @@ class StandingsRow():
         return (x+w/2., y+h/2.)
 
 
-    def add_new_round_columns(self, idx_round):
+    def add_new_round_columns(self, i_round):
 
 
-        box_opp = patches.Rectangle([X_TABLE+0.03+0.25+0.05+0.06*idx_round, Y_TABLE-self.idx*CELL_HEIGHT],
-                                     width=0.03,
+        box_opp = patches.Rectangle([X_TABLE+0.03+0.25+0.05+0.08*(i_round-1), Y_TABLE-self.idx*CELL_HEIGHT],
+                                     width=0.04,
                                      height=CELL_HEIGHT,
                                      facecolor='none', 
                                      lw=0.5, 
                                      zorder=3, 
-                                     edgecolor='k')
+                                     edgecolor='k', 
+                                     label='box_opp_idx_%i_round_%i'%(self.idx, i_round))
 
-        box_score = patches.Rectangle([X_TABLE+0.03+0.25+0.05+0.06*idx_round+0.03, Y_TABLE-self.idx*CELL_HEIGHT],
-                                     width=0.03,
+        box_score = patches.Rectangle([X_TABLE+0.03+0.25+0.05+0.08*(i_round-1)+0.04, Y_TABLE-self.idx*CELL_HEIGHT],
+                                     width=0.04,
                                      height=CELL_HEIGHT,
                                      facecolor='none', 
                                      lw=0.5, 
                                      zorder=3, 
-                                     edgecolor='k')
+                                     edgecolor='k', 
+                                     label='box_score_idx_%i_round_%i'%(self.idx, i_round))
 
         self.ax.add_artist(box_opp)
         self.ax.add_artist(box_score)
@@ -437,7 +439,7 @@ class SwissManager(object):
                                                               lw=2, 
                                                               label='button_add_next_round')
         x, y = self._get_center(self.button_add_next_round)
-        self.text_button_add_next_round = self.ax.text(x, y, '+', ha='center', va='center', size=20, weight='bold')
+        self.text_button_add_next_round = self.ax.text(x, y, '+', ha='center', va='center', size=18, weight='bold')
         self.list_buttons.append(self.button_add_next_round)
         self.ax.add_artist(self.button_add_next_round)
 
@@ -459,7 +461,65 @@ class SwissManager(object):
         ###  adding new round columns to standings table
         for i, row in enumerate(self.list_standings_rows):
             if i < self.participants.n_participants:
-                row.add_new_round_columns(idx_round=0)
+                row.add_new_round_columns(i_round=1)
+
+
+        ###  adding column titles for round 1
+        for box in self.ax.patches:
+            if box.get_label() == 'box_opp_idx_0_round_1':
+                x, y = box.get_x(), box.get_y()
+                w, h = box.get_width(), box.get_height()
+
+                box_opp_title = patches.Rectangle([x, y+h],
+                                                   width=w,
+                                                   height=h,
+                                                   facecolor='none', 
+                                                   lw=0.5, 
+                                                   zorder=3, 
+                                                   edgecolor='k', 
+                                                   label='title_opp_round_1')
+                x0, y0 = self._get_center(box_opp_title)
+                self.ax.text(x0, y0, 'Opp.', size=9, ha='center', va='center')
+
+                box_score_title = patches.Rectangle([x+w, y+h],
+                                                     width=w,
+                                                     height=h,
+                                                     facecolor='none', 
+                                                     lw=0.5, 
+                                                     zorder=3, 
+                                                     edgecolor='k', 
+                                                   label='title_score_round_1')
+                x0, y0 = self._get_center(box_score_title)
+                self.ax.text(x0, y0, 'Score', size=9, ha='center', va='center')
+
+                box_title = patches.Rectangle([x, y+2*h],
+                                               width=2*w,
+                                               height=h,
+                                               facecolor='none', 
+                                               lw=0.5, 
+                                               zorder=3, 
+                                               edgecolor='k', 
+                                               label='title_round_1')
+                x0, y0 = self._get_center(box_title)
+                self.ax.text(x0, y0, 'Round 1', size=9, ha='center', va='center', weight='bold')
+
+                self.ax.add_artist(box_opp_title)
+                self.ax.add_artist(box_score_title)
+                self.ax.add_artist(box_title)
+
+
+
+        ###  generating pairings
+        n = self.participants.n_participants
+        pairings = numpy.append(numpy.arange(n//2, n), numpy.arange(n//2))
+        self.participants.opponents.append(pairings)
+
+        for idx, idx_opp in enumerate(pairings):
+            for box in self.ax.patches:
+                if box.get_label() == 'box_opp_idx_%i_round_1' % idx:
+                    x0, y0 = self._get_center(box)
+                    self.ax.text(x0, y0, '%i'%(idx_opp+1), size=9, ha='center', va='center')
+
 
 
 
@@ -557,7 +617,7 @@ class SwissManager(object):
 
             if idx < self.participants.n_participants:
 
-                seed = self.participants.seeds[idx]
+                seed = self.participants.idx[idx]+1
                 name = self.participants.names[idx]
                 rating = self.participants.ratings[idx]
 
