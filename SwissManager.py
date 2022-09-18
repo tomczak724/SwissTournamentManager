@@ -80,6 +80,9 @@ class StandingsRow():
         self.text_x = self.ax.text(x, y, 'x', ha='center', va='center', size=12, color='none', weight='bold', label='text_remove_player_%i'%(idx+1))
         self.ax.add_artist(self.button_remove_player)
 
+        ###  dictionary to hold opponent ids and scores for future rounds
+        self.dict_rounds = {}
+
 
     def _get_center(self, patch):
         x = patch.get_x()
@@ -100,6 +103,8 @@ class StandingsRow():
                                      zorder=3, 
                                      edgecolor='k', 
                                      label='box_opp_idx_%i_round_%i'%(self.idx, i_round))
+        x0, y0 = self._get_center(box_opp)
+        text_opp = self.ax.text(x0, y0, '', size=9, ha='center', va='center')
 
         box_score = patches.Rectangle([X_TABLE+0.03+0.25+0.05+0.08*(i_round-1)+0.04, Y_TABLE-self.idx*CELL_HEIGHT],
                                      width=0.04,
@@ -109,9 +114,17 @@ class StandingsRow():
                                      zorder=3, 
                                      edgecolor='k', 
                                      label='box_score_idx_%i_round_%i'%(self.idx, i_round))
+        x0, y0 = self._get_center(box_score)
+        text_score = self.ax.text(x0, y0, '', size=9, ha='center', va='center')
 
         self.ax.add_artist(box_opp)
         self.ax.add_artist(box_score)
+
+        self.dict_rounds['round_%i'%i_round] = {'box_opp': box_opp, 
+                                                'text_opp': text_opp, 
+                                                'box_score': box_score, 
+                                                'text_score': text_score}
+
 
 
 
@@ -144,6 +157,7 @@ class SwissManager(object):
 
 
         ###  button params
+        self.current_round = 0
         self.list_buttons = []
 
 
@@ -297,7 +311,7 @@ class SwissManager(object):
         ###  Registraion: add player name
         if (self.active_display == 'registration') and (self._was_clicked(self.button_add_player_name, event)):
             self.active_button = self.button_add_player_name
-            self.active_button.set_facecolor('#ffffb3')
+            self.active_button.set_facecolor('#ffff99')
             self.button_add_player_rating.set_facecolor('w')
             self._redraw()
 
@@ -305,7 +319,7 @@ class SwissManager(object):
         ###  Registraion: add player rating
         if (self.active_display == 'registration') and (self._was_clicked(self.button_add_player_rating, event)):
             self.active_button = self.button_add_player_rating
-            self.active_button.set_facecolor('#ffffb3')
+            self.active_button.set_facecolor('#ffff99')
             self.button_add_player_name.set_facecolor('w')
             self._redraw()
 
@@ -380,6 +394,7 @@ class SwissManager(object):
             self.ax.texts[-1].remove()
             self.ax.texts[-1].remove()
             self.active_display = 'round_1'
+            self.current_round = 1
             self._redraw()
 
             self.start_round_1()
@@ -465,47 +480,45 @@ class SwissManager(object):
 
 
         ###  adding column titles for round 1
-        for box in self.ax.patches:
-            if box.get_label() == 'box_opp_idx_0_round_1':
-                x, y = box.get_x(), box.get_y()
-                w, h = box.get_width(), box.get_height()
+        box = self.list_standings_rows[0].dict_rounds['round_1']['box_opp']
+        x, y = box.get_x(), box.get_y()
+        w, h = box.get_width(), box.get_height()
+        box_opp_title = patches.Rectangle([x, y+h],
+                                           width=w,
+                                           height=h,
+                                           facecolor='none', 
+                                           lw=0.5, 
+                                           zorder=3, 
+                                           edgecolor='k', 
+                                           label='title_opp_round_1')
+        x0, y0 = self._get_center(box_opp_title)
+        self.ax.text(x0, y0, 'Opp.', size=9, ha='center', va='center')
 
-                box_opp_title = patches.Rectangle([x, y+h],
-                                                   width=w,
-                                                   height=h,
-                                                   facecolor='none', 
-                                                   lw=0.5, 
-                                                   zorder=3, 
-                                                   edgecolor='k', 
-                                                   label='title_opp_round_1')
-                x0, y0 = self._get_center(box_opp_title)
-                self.ax.text(x0, y0, 'Opp.', size=9, ha='center', va='center')
+        box_score_title = patches.Rectangle([x+w, y+h],
+                                             width=w,
+                                             height=h,
+                                             facecolor='none', 
+                                             lw=0.5, 
+                                             zorder=3, 
+                                             edgecolor='k', 
+                                           label='title_score_round_1')
+        x0, y0 = self._get_center(box_score_title)
+        self.ax.text(x0, y0, 'Score', size=9, ha='center', va='center')
 
-                box_score_title = patches.Rectangle([x+w, y+h],
-                                                     width=w,
-                                                     height=h,
-                                                     facecolor='none', 
-                                                     lw=0.5, 
-                                                     zorder=3, 
-                                                     edgecolor='k', 
-                                                   label='title_score_round_1')
-                x0, y0 = self._get_center(box_score_title)
-                self.ax.text(x0, y0, 'Score', size=9, ha='center', va='center')
+        box_title = patches.Rectangle([x, y+2*h],
+                                       width=2*w,
+                                       height=h,
+                                       facecolor='none', 
+                                       lw=0.5, 
+                                       zorder=3, 
+                                       edgecolor='k', 
+                                       label='title_round_1')
+        x0, y0 = self._get_center(box_title)
+        self.ax.text(x0, y0, 'Round 1', size=9, ha='center', va='center', weight='bold')
 
-                box_title = patches.Rectangle([x, y+2*h],
-                                               width=2*w,
-                                               height=h,
-                                               facecolor='none', 
-                                               lw=0.5, 
-                                               zorder=3, 
-                                               edgecolor='k', 
-                                               label='title_round_1')
-                x0, y0 = self._get_center(box_title)
-                self.ax.text(x0, y0, 'Round 1', size=9, ha='center', va='center', weight='bold')
-
-                self.ax.add_artist(box_opp_title)
-                self.ax.add_artist(box_score_title)
-                self.ax.add_artist(box_title)
+        self.ax.add_artist(box_opp_title)
+        self.ax.add_artist(box_score_title)
+        self.ax.add_artist(box_title)
 
 
 
@@ -515,10 +528,8 @@ class SwissManager(object):
         self.participants.opponents.append(pairings)
 
         for idx, idx_opp in enumerate(pairings):
-            for box in self.ax.patches:
-                if box.get_label() == 'box_opp_idx_%i_round_1' % idx:
-                    x0, y0 = self._get_center(box)
-                    self.ax.text(x0, y0, '%i'%(idx_opp+1), size=9, ha='center', va='center')
+            text_opp = self.list_standings_rows[idx].dict_rounds['round_1']['text_opp']
+            text_opp.set_text('%i'%(idx_opp+1))
 
 
 
