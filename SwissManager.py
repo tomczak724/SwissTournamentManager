@@ -104,7 +104,7 @@ class StandingsRow():
                                      edgecolor='k', 
                                      label='box_opp_idx_%i_round_%i'%(self.idx, i_round))
         x0, y0 = self._get_center(box_opp)
-        text_opp = self.ax.text(x0, y0, '', size=9, ha='center', va='center')
+        text_opp = self.ax.text(x0, y0, '', size=9, ha='center', va='center', zorder=3)
 
         box_score = patches.Rectangle([X_TABLE+0.03+0.25+0.05+0.08*(i_round-1)+0.04, Y_TABLE-self.idx*CELL_HEIGHT],
                                      width=0.04,
@@ -115,7 +115,7 @@ class StandingsRow():
                                      edgecolor='k', 
                                      label='box_score_idx_%i_round_%i'%(self.idx, i_round))
         x0, y0 = self._get_center(box_score)
-        text_score = self.ax.text(x0, y0, '', size=9, ha='center', va='center')
+        text_score = self.ax.text(x0, y0, '', size=9, ha='center', va='center', zorder=4)
 
         self.ax.add_artist(box_opp)
         self.ax.add_artist(box_score)
@@ -131,6 +131,8 @@ class StandingsRow():
 
 
 class SwissManager(object):
+
+
 
     def __init__(self, file_participants=''):
 
@@ -382,7 +384,7 @@ class SwissManager(object):
             self._redraw()
 
 
-        ###  Registraion: start round 1 YES
+        ###  Start Round 1 Prompt: start round 1 YES
         if (self.active_display == 'start_round_1_prompt') and (self._was_clicked(self.prompt_box_yes, event)):
 
             self.ax.collections[-1].remove()
@@ -393,14 +395,13 @@ class SwissManager(object):
             self.ax.texts[-1].remove()
             self.ax.texts[-1].remove()
             self.ax.texts[-1].remove()
-            self.active_display = 'round_1'
             self.current_round = 1
             self._redraw()
 
             self.start_round_1()
 
 
-        ###  Registraion: start round 1 NO
+        ###  Start Round 1 Prompt: start round 1 NO
         if (self.active_display == 'start_round_1_prompt') and (self._was_clicked(self.prompt_box_no, event)):
 
             self.ax.collections[-1].remove()
@@ -413,6 +414,62 @@ class SwissManager(object):
             self.ax.texts[-1].remove()
             self.active_display = 'registration'
             self._redraw()
+
+
+        ###  Round X: adding score
+        if (self.active_display == 'round_%i'%self.current_round):
+            for row in self.list_standings_rows:
+                if (row.idx < self.participants.n_participants) and (self._was_clicked(row.dict_rounds[self.active_display]['box_score'], event)):
+                    self.active_button.set_facecolor('w')
+                    self.active_button = row.dict_rounds[self.active_display]['box_score']
+                    self.active_button.set_facecolor('#ffff99')
+                    self._redraw()
+
+
+
+
+        ###  Round X: start next round
+        if (self.active_display == 'round_%i'%self.current_round) and (self._was_clicked(self.button_add_next_round, event)):
+            self.active_button = self.button_add_next_round
+
+
+            ###  checking that all score entries for this round are valid
+            valid_scores = True
+            scores = []
+            for row in self.list_standings_rows:
+                if (row.idx < self.participants.n_participants):
+
+                    s = row.dict_rounds[self.active_display]['text_score'].get_text()
+                    if (s == '') or (s.count('.') > 1):
+                        row.dict_rounds[self.active_display]['box_score'].set_facecolor('r')
+                        valid_scores = False
+
+                    else:
+                        scores.append(float(s))
+                        row.dict_rounds[self.active_display]['box_score'].set_facecolor('w')
+
+            ###  if scores are valid, record them and start next round
+            if valid_scores:
+                scores = numpy.array(scores, dtype=float)
+                self.participants.round_scores.append(scores)
+                self.participants.total_scores += scores
+
+                self.start_next_round()
+
+            self._redraw()
+
+
+
+
+
+
+
+
+        ###  Round X: end tournament
+        if (self.active_display == 'round_%i'%self.current_round) and (self._was_clicked(self.button_end_tournament, event)):
+            print('end tournament')
+
+
 
 
 
@@ -534,15 +591,73 @@ class SwissManager(object):
 
 
 
+        self.active_display = 'round_1'
         self._redraw()
+
+
+    def start_next_round(self):
+
+        self.current_round += 1
+        self.text_button_start_round_1.set_text('Round %i' % self.current_round)
+
+
+
+        ###  adding new round columns to standings table
+        for i, row in enumerate(self.list_standings_rows):
+            if i < self.participants.n_participants:
+                row.add_new_round_columns(i_round=self.current_round)
+
+
+        ###  adding column titles for round
+        box = self.list_standings_rows[0].dict_rounds['round_%i'%self.current_round]['box_opp']
+        x, y = box.get_x(), box.get_y()
+        w, h = box.get_width(), box.get_height()
+        box_opp_title = patches.Rectangle([x, y+h],
+                                           width=w,
+                                           height=h,
+                                           facecolor='none', 
+                                           lw=0.5, 
+                                           zorder=3, 
+                                           edgecolor='k', 
+                                           label='title_opp_round_%i'%self.current_round)
+        x0, y0 = self._get_center(box_opp_title)
+        self.ax.text(x0, y0, 'Opp.', size=9, ha='center', va='center')
+
+        box_score_title = patches.Rectangle([x+w, y+h],
+                                             width=w,
+                                             height=h,
+                                             facecolor='none', 
+                                             lw=0.5, 
+                                             zorder=3, 
+                                             edgecolor='k', 
+                                           label='title_score_round_%i'%self.current_round)
+        x0, y0 = self._get_center(box_score_title)
+        self.ax.text(x0, y0, 'Score', size=9, ha='center', va='center')
+
+        box_title = patches.Rectangle([x, y+2*h],
+                                       width=2*w,
+                                       height=h,
+                                       facecolor='none', 
+                                       lw=0.5, 
+                                       zorder=3, 
+                                       edgecolor='k', 
+                                       label='title_round_%i'%self.current_round)
+        x0, y0 = self._get_center(box_title)
+        self.ax.text(x0, y0, 'Round %i'%self.current_round, size=9, ha='center', va='center', weight='bold')
+
+        self.ax.add_artist(box_opp_title)
+        self.ax.add_artist(box_score_title)
+        self.ax.add_artist(box_title)
+
+        self.active_display = 'round_%i' % self.current_round
 
 
 
     def _onKeyPress(self, event):
 
 
-
-        if self.active_button.get_label() == 'button_add_player_name':
+        ###  add new player name
+        if (self.active_display == 'registration') and (self.active_button.get_label() == 'button_add_player_name'):
 
             if event.key.lower() == 'tab':
                 self.active_button = self.button_add_player_rating
@@ -563,7 +678,7 @@ class SwissManager(object):
             self._redraw()
 
 
-        if self.active_button.get_label() == 'button_add_player_rating':
+        if (self.active_display == 'registration') and (self.active_button.get_label() == 'button_add_player_rating'):
 
             if event.key in string.digits + '.':
                 self.new_player_rating += event.key
@@ -577,7 +692,7 @@ class SwissManager(object):
 
 
         ###  add new player with "enter"
-        if event.key.lower() == 'enter':
+        if (self.active_display == 'registration') and (event.key.lower() == 'enter'):
 
             if self.new_player_name == '':
                 pass
@@ -594,6 +709,27 @@ class SwissManager(object):
                 self.text_new_player_rating.set_text('')
                 self._redraw_standings_table()
                 self._redraw()
+
+
+        ###  Round X: adding score
+        if (self.active_display == 'round_%i'%self.current_round) and ('box_score_' in self.active_button.get_label()):
+
+            #box_score_idx_4_round_1
+            idx = int(self.active_button.get_label().split('_')[3])
+            text_obj = self.list_standings_rows[idx].dict_rounds[self.active_display]['text_score']
+            text_text = text_obj.get_text()
+
+            if event.key in string.digits + '.':
+                text_text += event.key
+
+            elif (text_text != '') and (event.key.lower() == 'backspace'):
+                text_text = text_text[:-1]
+
+            text_obj.set_text(text_text)
+            self._redraw()
+
+
+
 
 
     def _was_clicked(self, button, event):

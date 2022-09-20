@@ -14,8 +14,9 @@ class ParticipantRoster:
         self.ratings = []
         self.idx = []
 
-        self.total_scores = []
         self.opponents = []
+        self.round_scores = []
+        self.total_scores = []
 
 
 
