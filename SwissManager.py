@@ -1,6 +1,5 @@
 
 import os
-import pdb
 import numpy
 import string
 from matplotlib import patches
@@ -601,7 +600,6 @@ class SwissManager(object):
         self.text_button_start_round_1.set_text('Round %i' % self.current_round)
 
 
-
         ###  adding new round columns to standings table
         for i, row in enumerate(self.list_standings_rows):
             if i < self.participants.n_participants:
@@ -650,6 +648,38 @@ class SwissManager(object):
         self.ax.add_artist(box_title)
 
         self.active_display = 'round_%i' % self.current_round
+
+
+
+        ###  GENERATING PAIRINGS - FIDE Dutch System
+        ###  https://handbook.fide.com/chapter/C0403
+
+        ###  start by simply pairng top half v. bottom half for all unique score groups
+
+        ###  checking number of participants in each score group
+        ###  For 12 participants, after round 1 with, four win/loss and two draws
+        ###  >>> sgroups = [0., 0.5, 1.]
+        ###  >>> counts  = [4, 4, 4]
+        scores, counts = numpy.unique(self.participants.total_scores, return_counts=True)
+
+        ###  reversing order so that highest scores come first
+        scores = scores[::-1]
+        counts = counts[::-1]
+
+        ###  constructing score groups (SG)
+        score_groups = [self.participants.idx[self.participants.total_scores==s].tolist() for s in scores]
+
+
+        ###  if there's an odd number in the top SG the lowest rated player becomes a donwfloater
+        if counts[0] % 2 == 1:
+            downfloater = score_groups[0].pop(counts[0]-1)
+            score_groups[1] = [downfloater] + score_groups[1]
+
+
+
+
+
+
 
 
 

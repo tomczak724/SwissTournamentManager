@@ -18,6 +18,11 @@ class ParticipantRoster:
         self.round_scores = []
         self.total_scores = []
 
+        ###  IDEA: We can store a record of all opponent pairings as a list of strings
+        ###        idx_a + 'v' + idx_b
+        ###        [ '1v7' , '2v8' , '3v9' , ... ]
+
+
 
 
     def __repr__(self):
@@ -50,6 +55,7 @@ class ParticipantRoster:
     def remove_participant(self, idx):
         self.names = numpy.concatenate([self.names[:idx], self.names[idx+1:]])
         self.ratings = numpy.concatenate([self.ratings[:idx], self.ratings[idx+1:]])
+        self.total_scores = self.total_scores[:-1]
         self.idx = self.idx[:-1]
         self.n_participants -= 1
 
