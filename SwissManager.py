@@ -2,6 +2,7 @@
 import os
 import numpy
 import string
+import itertools
 from matplotlib import patches
 from matplotlib import pyplot
 
@@ -586,8 +587,7 @@ class SwissManager(object):
         for idx, idx_opp in enumerate(pairings):
             text_opp = self.list_standings_rows[idx].dict_rounds['round_1']['text_opp']
             text_opp.set_text('%i'%(idx_opp+1))
-
-
+            self.participants.all_pairings.append('%iv%i' % (idx, idx_opp))
 
 
         self.active_display = 'round_1'
@@ -651,6 +651,7 @@ class SwissManager(object):
 
 
 
+
         ###  GENERATING PAIRINGS - FIDE Dutch System
         ###  https://handbook.fide.com/chapter/C0403
 
@@ -670,10 +671,44 @@ class SwissManager(object):
         score_groups = [self.participants.idx[self.participants.total_scores==s].tolist() for s in scores]
 
 
-        ###  if there's an odd number in the top SG the lowest rated player becomes a donwfloater
-        if counts[0] % 2 == 1:
-            downfloater = score_groups[0].pop(counts[0]-1)
-            score_groups[1] = [downfloater] + score_groups[1]
+        candidate_pairing = -numpy.ones(self.participants.n_participants, dtype=int)
+
+        ###  iterating over score groups
+        for i_sg, sg in enumerate(score_groups):
+
+            ###  generating subgroups s1, s1 (top half, bottom half)
+            max_pairs = len(sg) // 2
+            s1 = sg[:max_pairs]
+            s2 = sg[max_pairs:]
+
+            ###  iterating through all transpositions of s2 (i.e. permutations)
+            for s2_t in itertools.permutations(s2, max_pairs):
+
+                ###  checking if pairing with s1 is valid
+                violations = 0
+
+                ###  checking for pairings that occurred in a previous round
+                for idx1, idx2 in zip(s1, s2_t):
+                    if '%iv%i'%(idx1, idx2) in self.participants.all_pairings:
+                        violations += 1
+
+                ###  if odd number of players in score group, grab idx of unpaired player
+                if len(sg)%2 == 1:
+                    idx_downfloater = list(set(s2) - set(s2_t))[0]
+
+                ###  stop checking if no violations
+                if violations == 0:
+                    break
+
+
+            ###  valid s2 transposition found, record candidate pairings
+            if violations == 0:
+                for idx, idx_opp in zip(s1, s2_t):
+                    candidate_pairing[idx] = idx_opp
+                    candidate_pairing[idx_opp] = idx
+
+
+
 
 
 

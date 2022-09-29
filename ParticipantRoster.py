@@ -18,9 +18,7 @@ class ParticipantRoster:
         self.round_scores = []
         self.total_scores = []
 
-        ###  IDEA: We can store a record of all opponent pairings as a list of strings
-        ###        idx_a + 'v' + idx_b
-        ###        [ '1v7' , '2v8' , '3v9' , ... ]
+        self.all_pairings = []
 
 
 
