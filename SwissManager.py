@@ -586,7 +586,10 @@ class SwissManager(object):
 
         for idx, idx_opp in enumerate(pairings):
             text_opp = self.list_standings_rows[idx].dict_rounds['round_1']['text_opp']
-            text_opp.set_text('%i'%(idx_opp+1))
+            try:
+                text_opp.set_text('%i'%(idx_opp+1))
+            except:
+                text_opp.set_text('%s'%(idx_opp))
             self.participants.all_pairings.append('%iv%i' % (idx, idx_opp))
 
 
@@ -660,17 +663,15 @@ class SwissManager(object):
         ###  checking number of participants in each score group
         ###  For 12 participants, after round 1 with, four win/loss and two draws
         ###  >>> sgroups = [0., 0.5, 1.]
-        ###  >>> counts  = [4, 4, 4]
-        scores, counts = numpy.unique(self.participants.total_scores, return_counts=True)
+        scores = numpy.unique(self.participants.total_scores)
 
         ###  reversing order so that highest scores come first
-        scores = scores[::-1]
-        counts = counts[::-1]
+        scores = numpy.sort(scores)[::-1]
 
         ###  constructing score groups (SG)
         score_groups = [self.participants.idx[self.participants.total_scores==s].tolist() for s in scores]
 
-
+        ###  array to hold candidate pairing
         candidate_pairing = -numpy.ones(self.participants.n_participants, dtype=int)
 
         ###  iterating over score groups
@@ -685,34 +686,73 @@ class SwissManager(object):
             for s2_t in itertools.permutations(s2, max_pairs):
 
                 ###  checking if pairing with s1 is valid
-                violations = 0
+                n_violations = 0
 
                 ###  checking for pairings that occurred in a previous round
                 for idx1, idx2 in zip(s1, s2_t):
                     if '%iv%i'%(idx1, idx2) in self.participants.all_pairings:
-                        violations += 1
-
-                ###  if odd number of players in score group, grab idx of unpaired player
-                if len(sg)%2 == 1:
-                    idx_downfloater = list(set(s2) - set(s2_t))[0]
+                        n_violations += 1
 
                 ###  stop checking if no violations
-                if violations == 0:
+                if n_violations == 0:
                     break
 
 
+            ###  if only one participant in this scoregroup either downfloat or assign BYE
+            if len(sg) == 1:
+
+                ###  downfloat to next scoregroup
+                if i_sg < len(score_groups)-1:
+                    score_groups[i_sg+1] = sg + score_groups[i_sg+1]
+
+                ###  or assign BYE
+                else:
+                    candidate_pairing[sg[0]] = 'BYE'
+
+
             ###  valid s2 transposition found, record candidate pairings
-            if violations == 0:
+            elif n_violations == 0:
+
+                ###  adding candidate pairings
                 for idx, idx_opp in zip(s1, s2_t):
                     candidate_pairing[idx] = idx_opp
                     candidate_pairing[idx_opp] = idx
 
+                ###  if odd number of players either downfloat or assign BYE
+                if len(sg)%2 == 1:
+                    idx_downfloater = list(set(s2) - set(s2_t))[0]
+
+                    ###  downfloat to next scoregroup
+                    if i_sg < len(score_groups)-1:
+                        score_groups[i_sg+1] = [idx_downfloater] + score_groups[i_sg+1]
+
+                    ###  or assign BYE
+                    else:
+                        candidate_pairing[idx_downfloater] = 'BYE'
 
 
 
 
 
+        print('\nCANDIDATE PAIRING')
+        str1, str2 = '', ''
+        for idx, idx_opp in enumerate(candidate_pairing):
+            str1 += '%3i ' % idx
+            str2 += '%3i ' % idx_opp
+        print(str1)
+        print(str2)
 
+        ###  writing pairings to table
+        self.participants.opponents.append(candidate_pairing)        
+        for idx, idx_opp in enumerate(candidate_pairing):
+            text_opp = self.list_standings_rows[idx].dict_rounds[self.active_display]['text_opp']
+            try:
+                text_opp.set_text('%i'%(idx_opp+1))
+            except:
+                text_opp.set_text('%s'%(idx_opp))
+            self.participants.all_pairings.append('%iv%i' % (idx, idx_opp))
+
+        self._redraw()
 
 
 
