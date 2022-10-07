@@ -697,6 +697,13 @@ class SwissManager(object):
                 if n_violations == 0:
                     break
 
+            ###  if no valid transposition of s2 exists, test swapping residents between s1 and s2
+            if (len(sg) > 1) and (n_violations > 0):
+                pass
+                #_swap_residents_s1_s2
+
+
+
 
             ###  if only one participant in this scoregroup either downfloat or assign BYE
             if len(sg) == 1:
@@ -856,6 +863,25 @@ class SwissManager(object):
         w = patch.get_width()
         h = patch.get_height()
         return (x+w/2., y+h/2.)
+
+
+    def _swap_residents_s1_s2(self, s1, s2, n_swap):
+        '''
+        Paramters
+        ---------
+            s1 (list) : Subgroup 1
+            s2 (list) : Subgroup 2
+            n_swap (int) : Number of residents to swap between s1 and s2
+        '''
+
+        new_s1s_s2s = []
+        for s1_swap in itertools.combinations(s1, n_swap):
+            for s2_swap in itertools.combinations(s2, n_swap):
+                s1_new = set(s1).difference(set(s1_swap)).union(set(s2_swap))
+                s2_new = set(s2).difference(set(s2_swap)).union(set(s1_swap))
+                new_s1s_s2s.append([list(s1_new), list(s2_new)])
+
+        return new_s1s_s2s
 
 
     def _redraw(self):
