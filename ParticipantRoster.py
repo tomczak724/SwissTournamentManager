@@ -18,7 +18,7 @@ class ParticipantRoster:
         self.round_scores = []
         self.total_scores = []
 
-        self.all_pairings = []
+        self.all_prev_pairings = []
 
 
 

@@ -590,7 +590,7 @@ class SwissManager(object):
                 text_opp.set_text('%i'%(idx_opp+1))
             except:
                 text_opp.set_text('%s'%(idx_opp))
-            self.participants.all_pairings.append('%iv%i' % (idx, idx_opp))
+            self.participants.all_prev_pairings.append('%iv%i' % (idx, idx_opp))
 
 
         self.active_display = 'round_1'
@@ -665,13 +665,13 @@ class SwissManager(object):
         ###  >>> sgroups = [0., 0.5, 1.]
         scores = numpy.unique(self.participants.total_scores)
 
-        ###  reversing order so that highest scores come first
+        ###  reversing order so that highest score comes first
         scores = numpy.sort(scores)[::-1]
 
         ###  constructing score groups (SG)
         score_groups = [self.participants.idx[self.participants.total_scores==s].tolist() for s in scores]
 
-        ###  array to hold candidate pairing
+        ###  empty array to hold candidate pairing
         candidate_pairing = -numpy.ones(self.participants.n_participants, dtype=int)
 
         ###  iterating over score groups
@@ -690,7 +690,7 @@ class SwissManager(object):
 
                 ###  checking for pairings that occurred in a previous round
                 for idx1, idx2 in zip(s1, s2_t):
-                    if '%iv%i'%(idx1, idx2) in self.participants.all_pairings:
+                    if '%iv%i'%(idx1, idx2) in self.participants.all_prev_pairings:
                         n_violations += 1
 
                 ###  stop checking if no violations
@@ -699,8 +699,43 @@ class SwissManager(object):
 
             ###  if no valid transposition of s2 exists, test swapping residents between s1 and s2
             if (len(sg) > 1) and (n_violations > 0):
-                pass
-                #_swap_residents_s1_s2
+                found_valid_swapping = False
+
+                ###  iterating over number of players to swap [1, 2, 3, ... ]
+                for n_swap in range(1, max_pairs//2):
+
+                    ###  generating all combinations of (s1, s2) with `n_swap` residents
+                    for (s1_swap, s2_swap) in self._swap_residents_s1_s2(s1, s2, n_swap):
+
+                        ###  iterating through all transpositions of s2_swap (i.e. permutations)
+                        for s2_swap_t in itertools.permutations(s2_swap, max_pairs):
+
+                            ###  checking if pairing with s1 is valid
+                            n_violations = 0
+
+                            ###  checking for pairings that occurred in a previous round
+                            for idx1, idx2 in zip(s1_swap, s2_swap_t):
+                                if '%iv%i'%(idx1, idx2) in self.participants.all_prev_pairings:
+                                    n_violations += 1
+
+                            ###  stop checking if no violations
+                            if n_violations == 0:
+                                found_valid_swapping = True
+                                s1 = s1_swap
+                                s2_t = s2_swap_t
+                                break
+
+                        ###  break swap combinations if a valid swapping of residents is found
+                        if found_valid_swapping == True:
+                            break
+
+                    ###  break n_swap if a valid swapping of residents is found
+                    if found_valid_swapping == True:
+                        break
+
+
+
+
 
 
 
@@ -757,7 +792,7 @@ class SwissManager(object):
                 text_opp.set_text('%i'%(idx_opp+1))
             except:
                 text_opp.set_text('%s'%(idx_opp))
-            self.participants.all_pairings.append('%iv%i' % (idx, idx_opp))
+            self.participants.all_prev_pairings.append('%iv%i' % (idx, idx_opp))
 
         self._redraw()
 
