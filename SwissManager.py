@@ -677,10 +677,13 @@ class SwissManager(object):
         ###  iterating over score groups
         for i_sg, sg in enumerate(score_groups):
 
+
             ###  generating subgroups s1, s1 (top half, bottom half)
             max_pairs = len(sg) // 2
             s1 = sg[:max_pairs]
             s2 = sg[max_pairs:]
+            s1_candidate = []
+            s2_candidate = []
 
             ###  iterating through all transpositions of s2 (i.e. permutations)
             for s2_t in itertools.permutations(s2, max_pairs):
@@ -695,6 +698,8 @@ class SwissManager(object):
 
                 ###  stop checking if no violations
                 if n_violations == 0:
+                    s1_candidate = s1
+                    s2_candidate = s2_t
                     break
 
             ###  if no valid transposition of s2 exists, test swapping residents between s1 and s2
@@ -721,8 +726,8 @@ class SwissManager(object):
                             ###  stop checking if no violations
                             if n_violations == 0:
                                 found_valid_swapping = True
-                                s1 = s1_swap
-                                s2_t = s2_swap_t
+                                s1_candidate = s1_swap
+                                s2_candidate = s2_swap_t
                                 break
 
                         ###  break swap combinations if a valid swapping of residents is found
@@ -756,13 +761,13 @@ class SwissManager(object):
             elif n_violations == 0:
 
                 ###  adding candidate pairings
-                for idx, idx_opp in zip(s1, s2_t):
+                for idx, idx_opp in zip(s1_candidate, s2_candidate):
                     candidate_pairing[idx] = idx_opp
                     candidate_pairing[idx_opp] = idx
 
                 ###  if odd number of players either downfloat or assign BYE
                 if len(sg)%2 == 1:
-                    idx_downfloater = list(set(s2) - set(s2_t))[0]
+                    idx_downfloater = list(set(sg) - set(s1_candidate) - set(s2_candidate))[0]
 
                     ###  downfloat to next scoregroup
                     if i_sg < len(score_groups)-1:
@@ -772,6 +777,15 @@ class SwissManager(object):
                     else:
                         candidate_pairing[idx_downfloater] = 'BYE'
 
+
+            ###  TESTING IDEA OF DOWNFLOATING ALL MEMBERS OF 
+            ###  SCOREGROUP IF NO VALID CANDIDATE PAIRING IS FOUND
+            else:
+
+                ###  downfloat to next scoregroup
+                if i_sg < len(score_groups)-1:
+                    for idx_downfloater in sg:
+                        score_groups[i_sg+1] = [idx_downfloater] + score_groups[i_sg+1]
 
 
 
