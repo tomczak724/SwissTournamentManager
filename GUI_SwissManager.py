@@ -36,13 +36,21 @@ layout = [[row_add_player],
           [sg.Button('Maximize', font=(FONT, 14), key='-MAXIMIZE-'), 
            sg.Button('Close', font=(FONT, 14), key='-CLOSE-')], 
 
-          [sg.Column(layout=[[]], 
-                     key='Player Table', 
-                     size=(450, 300), 
-                     scrollable=True,
-                     vertical_scroll_only=True)]
-
-           ]
+          [sg.Table(values=[[]], 
+                                       headings=['Name', 'Rating'], 
+                                       size=(900, 250),
+                                       font=(FONT, 12),
+                                       max_col_width=25,
+                                       auto_size_columns=False,
+                                       display_row_numbers=True,
+                                       justification='right',
+                                       num_rows=20,
+                                       alternating_row_color='lightyellow',
+                                       key='-TABLE-',
+                                       enable_events=True,
+                                       expand_x=False,
+                                       expand_y=False)
+          ] ]
 
 
 
@@ -78,13 +86,12 @@ while True:
                 rating = int(values['-NEW PLAYER RATING-'])
                 PARTICIPANTS.add_participant(name, rating)
 
-                window.extend_layout(window['Player Table'], [[sg.Button('X'), sg.Text('Clicked Enter')],
-                                                              [sg.Button('X'), sg.Text('Clicked Enter')],
-                                                              [sg.Button('X'), sg.Text('Clicked Enter')],
-                                                              [sg.Button('X'), sg.Text('Clicked Enter')],
-                                                              [sg.Button('X'), sg.Text('Clicked Enter')]])
+                #window.extend_layout(window['Player Table'], [[sg.Button('X'), sg.Text('%s %i' % (name, rating))]])
+                #window['Player Table'].contents_changed()
 
-                window['Player Table'].contents_changed()
+                window['-TABLE-'].update(values=PARTICIPANTS.get_roster_list())
+
+                ###  clearing input prompts
                 junk = window['-NEW PLAYER NAME-'].update(value='')
                 junk = window['-NEW PLAYER RATING-'].update(value='')
 

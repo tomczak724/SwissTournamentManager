@@ -20,9 +20,6 @@ class ParticipantRoster:
 
         self.all_prev_pairings = []
 
-
-
-
     def __repr__(self):
         print('\n                        Name  Rating')
 
@@ -57,3 +54,10 @@ class ParticipantRoster:
         self.idx = self.idx[:-1]
         self.n_participants -= 1
 
+
+
+    def get_roster_list(self):
+        '''
+        Returns a list of the players, ratings, and scores in a format compatible with PySimpleGUI
+        '''
+        return [[name, rating] for name, rating in zip(self.names, self.ratings)]
