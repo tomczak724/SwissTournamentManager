@@ -61,12 +61,7 @@ registration_table = sg.Table(values=PARTICIPANTS.get_roster_list(integer_rating
 
 
 layout = [[row_add_player], 
-
-          [sg.Button('Maximize', font=(FONT, 14), key='-MAXIMIZE-'), 
-           sg.Button('Close', font=(FONT, 14), key='-CLOSE-')], 
-
-          [registration_table] 
-
+          [registration_table]
           ]
 
 
@@ -74,11 +69,34 @@ layout = [[row_add_player],
 
 
 
-window = sg.Window('My Cool Title', 
+window = sg.Window('Swiss Tournament Manager', 
                    layout, 
                    location=(50, 0),
                    size=(500, 670), 
                    resizable=True)
+
+
+def popupEditPlayer(current_name, current_rating):
+
+    popup = sg.Window('Edit Player',
+                      layout=[
+                              [sg.Column(layout=[[sg.Text('Name', font=(FONT, 14))], 
+                                                 [sg.InputText(size=(25, 3), default_text=current_name, border_width=2, font=(FONT, 14), key='-EDIT PLAYER NAME-')]]), 
+                               sg.Column(layout=[[sg.Text('Rating', font=(FONT, 14))], 
+                                                 [sg.InputText(size=(6, 3), default_text=int(current_rating), border_width=2, font=(FONT, 14), key='-EDIT PLAYER RATING-')]])], 
+                              [sg.Button('Submit', font=(FONT, 14), key='-SUBMIT-'), 
+                               sg.Button('Cancel', font=(FONT, 14), key='-CANCEL-')]
+                             ]
+                      )
+
+    event, values = popup.read()
+
+    popup.close()
+    if event == '-SUBMIT-':
+        return (values['-EDIT PLAYER NAME-'], int(values['-EDIT PLAYER RATING-']))
+    elif event == '-CANCEL-':
+        return (current_name, current_rating)
+
 
 
 while True:
@@ -94,7 +112,7 @@ while True:
                 print('               "%s":' % k, v)
 
 
-    if event == sg.WIN_CLOSED or event == '-CLOSE-':
+    if event == sg.WIN_CLOSED:
         break
 
     elif event == '-MAXIMIZE-':
@@ -118,6 +136,17 @@ while True:
 
             except:
                 sg.popup('Error Parsing Inputs', font=(FONT, 16))
+
+
+    ###  edit a player
+    elif (event == 'edit player') and (len(values['-TABLE-']) == 1):
+
+        idx_player = values['-TABLE-'][0]
+        new_name, new_rating = popupEditPlayer(PARTICIPANTS.names[idx_player], PARTICIPANTS.ratings[idx_player])
+
+        PARTICIPANTS.remove_participant(idx_player)
+        PARTICIPANTS.add_participant(new_name, int(new_rating))
+        window['-TABLE-'].update(values=PARTICIPANTS.get_roster_list(integer_rating=True))
 
 
     ###  remove a player
