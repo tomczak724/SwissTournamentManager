@@ -56,8 +56,13 @@ class ParticipantRoster:
 
 
 
-    def get_roster_list(self):
+    def get_roster_list(self, integer_rating=True):
         '''
         Returns a list of the players, ratings, and scores in a format compatible with PySimpleGUI
         '''
-        return [[name, rating] for name, rating in zip(self.names, self.ratings)]
+        if integer_rating:
+            ratings_tmp = [int(r) for r in self.ratings]
+        else:
+            ratings_tmp = self.ratings
+
+        return [[idx+1, name, rating] for idx, name, rating in zip(self.idx, self.names, ratings_tmp)]
