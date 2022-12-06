@@ -23,8 +23,6 @@ dx, dy = 25, 2
 
 
 
-
-
 row_add_player = [sg.Frame(title='', 
                            size=(1000, 80), 
                            border_width=3, 
@@ -41,6 +39,7 @@ row_add_player = [sg.Frame(title='',
                                              layout=[[sg.Text('Rating', font=(FONT, 14))], 
                                                      [sg.InputText(size=(6, 3), border_width=2, font=(FONT, 14), key='-NEW PLAYER RATING-')]])
                                      ]])]
+
 
 right_click_menu = ['', ['edit player', 'remove player', 'do nothing']]
 
@@ -60,19 +59,54 @@ registration_table = sg.Table(values=PARTICIPANTS.get_roster_list(integer_rating
                               expand_y=False)
 
 
-layout = [[row_add_player], 
-          [registration_table]
-          ]
 
 
+registration_layout = [ [ row_add_player ], 
+                        [ registration_table, 
+                          sg.Column(pad=10, layout=[[sg.Text('Rounds : ', font=(FONT, 16)), sg.DropDown(values=[1, 2, 3, 4, 5], default_value=5, font=(FONT, 16))]])
+                        ]
+                      ]
+
+registration_layout = [ [ registration_table, 
+                          sg.Column(pad=10, layout=[[sg.Text(' Name: ', font=(FONT, 14)), 
+                                                     sg.InputText(size=(20, 3), border_width=2, font=(FONT, 14), key='-NEW PLAYER NAME2-')], 
+
+                                                    [sg.Text('Rating: ', font=(FONT, 14)), 
+                                                     sg.InputText(size=(6, 3), border_width=2, font=(FONT, 14), key='-NEW PLAYER RATING2-')], 
+
+                                                    [sg.Text('     ', font=(FONT, 14)), 
+                                                     sg.Button('Add Player', border_width=2, font=(FONT, 13), key='-ADD NEW PLAYER2-')], 
+
+                                                    [sg.Text('', font=(FONT, 20))], 
+
+                                                    [sg.Text('Number of Rounds : ', font=(FONT, 14)), 
+                                                     sg.DropDown(values=[1, 2, 3, 4, 5], default_value=5, font=(FONT, 16))], 
+
+                                                    [sg.Text('', font=(FONT, 20))], 
+
+                                                    [sg.Button('Start Round 1', border_width=2, font=(FONT, 18), key='-START ROUND 1-')]
+
+                                                    
+                                                      ])
+                        ]
+                      ]
 
 
+###  Instantiating TabGroup to contain tabs for registration and rounds
+tab_group_layout = [[sg.Tab(' Registration ', registration_layout, key='-TAB REGISTRATION-')]]
+
+# The window layout - defines the entire window
+layout = [[sg.TabGroup(tab_group_layout,
+                       enable_events=True,
+                       font=(FONT, 14), 
+                       expand_x=True, 
+                       key='-TABGROUP-')]]
 
 
 window = sg.Window('Swiss Tournament Manager', 
                    layout, 
                    location=(50, 0),
-                   size=(500, 670), 
+                   size=(700, 670), 
                    resizable=True)
 
 
