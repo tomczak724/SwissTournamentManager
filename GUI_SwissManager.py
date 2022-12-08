@@ -50,7 +50,7 @@ registration_table = sg.Table(values=PARTICIPANTS.get_roster_list(integer_rating
                               col_widths=[3, 20, 6],
                               auto_size_columns=False,
                               justification='center',
-                              key='-TABLE-',
+                              key='-REGISTRATION TABLE-',
                               enable_events=True,
                               enable_click_events=True,
                               right_click_selects=True,
@@ -80,7 +80,7 @@ registration_layout = [ [ registration_table,
                                                     [sg.Text('', font=(FONT, 20))], 
 
                                                     [sg.Text('Number of Rounds : ', font=(FONT, 14)), 
-                                                     sg.DropDown(values=[1, 2, 3, 4, 5], default_value=5, font=(FONT, 16))], 
+                                                     sg.DropDown(values=[1, 2, 3, 4, 5], default_value=5, font=(FONT, 16), key='-DROPDOWN N ROUNDS-')], 
 
                                                     [sg.Text('', font=(FONT, 20))], 
 
@@ -106,7 +106,7 @@ layout = [[sg.TabGroup(tab_group_layout,
 window = sg.Window('Swiss Tournament Manager', 
                    layout, 
                    location=(50, 0),
-                   size=(700, 670), 
+                   size=(850, 670), 
                    resizable=True)
 
 
@@ -133,6 +133,8 @@ def popupEditPlayer(current_name, current_rating):
 
 
 
+
+###  Instantiating event loop for main window
 while True:
 
     event, values = window.read()
@@ -152,6 +154,7 @@ while True:
     elif event == '-MAXIMIZE-':
         window.maximize()
 
+    ###  add a new player
     elif event == '-ADD NEW PLAYER-':
 
         ###  only run if info entered
@@ -162,7 +165,7 @@ while True:
                 rating = int(values['-NEW PLAYER RATING-'])
                 PARTICIPANTS.add_participant(name, rating)
 
-                window['-TABLE-'].update(values=PARTICIPANTS.get_roster_list(integer_rating=True))
+                window['-REGISTRATION TABLE-'].update(values=PARTICIPANTS.get_roster_list(integer_rating=True))
 
                 ###  clearing input prompts
                 junk = window['-NEW PLAYER NAME-'].update(value='')
@@ -171,29 +174,103 @@ while True:
             except:
                 sg.popup('Error Parsing Inputs', font=(FONT, 16))
 
+    ###  edit an existing player
+    elif (event == 'edit player') and (len(values['-REGISTRATION TABLE-']) == 1):
 
-    ###  edit a player
-    elif (event == 'edit player') and (len(values['-TABLE-']) == 1):
-
-        idx_player = values['-TABLE-'][0]
+        idx_player = values['-REGISTRATION TABLE-'][0]
         new_name, new_rating = popupEditPlayer(PARTICIPANTS.names[idx_player], PARTICIPANTS.ratings[idx_player])
 
         PARTICIPANTS.remove_participant(idx_player)
         PARTICIPANTS.add_participant(new_name, int(new_rating))
-        window['-TABLE-'].update(values=PARTICIPANTS.get_roster_list(integer_rating=True))
+        window['-REGISTRATION TABLE-'].update(values=PARTICIPANTS.get_roster_list(integer_rating=True))
 
+    ###  remove an existing player
+    elif (event == 'remove player') and (len(values['-REGISTRATION TABLE-']) == 1):
 
-    ###  remove a player
-    elif (event == 'remove player') and (len(values['-TABLE-']) == 1):
-
-        idx_player = values['-TABLE-'][0]
+        idx_player = values['-REGISTRATION TABLE-'][0]
         confirmation = sg.popup_yes_no('Want to remove %s ?' % PARTICIPANTS.names[idx_player], 
                                        title='Remove Player', 
                                        font=(FONT, 14))
 
         if confirmation == 'Yes':
             PARTICIPANTS.remove_participant(idx_player)
-            window['-TABLE-'].update(values=PARTICIPANTS.get_roster_list(integer_rating=True))
+            window['-REGISTRATION TABLE-'].update(values=PARTICIPANTS.get_roster_list(integer_rating=True))
+
+    ###  start round 1
+    elif event == '-START ROUND 1-':
+
+        ###  confirm that user actually wants to start round 1
+        confirmation = sg.popup_yes_no('Want to start Round 1 ?', 
+                                       title='Start Tournament', 
+                                       font=(FONT, 14))
+
+        if confirmation != 'Yes':
+            continue
+
+
+        ###  generating standings table
+        headings1 = ['', 'Name', 'Rating']
+        headings2 = [' ']
+        widths1 = registration_table.ColumnWidths
+        widths2 = [sum(registration_table.ColumnWidths)]
+        for i in range(values['-DROPDOWN N ROUNDS-']):
+            headings1 += ['vs', 'S']
+            headings2 += ['Round %i' % (i+1)]
+            widths1 += [4, 4]
+            widths2 += [8]
+        headings1 += ['Total']
+        headings2 += ['']
+        widths1 += [5]
+        widths2 += [5]
+
+
+
+        standings_top_heading = sg.Table(values=[], 
+                                         headings=headings2, 
+                                         size=(900, 0),
+                                         font=(FONT, 12),
+                                         col_widths=widths2,
+                                         hide_vertical_scroll=True,
+                                         auto_size_columns=False,
+                                         justification='center',
+                                         key='-STANDINGS TOP HEADING-',
+                                         expand_x=False,
+                                         expand_y=False)
+
+
+        standings_table = sg.Table(values=PARTICIPANTS.get_roster_list(integer_rating=True), 
+                                   headings=headings1, 
+                                   col_widths=widths1,
+                                   size=(900, 250),
+                                   font=(FONT, 12),
+                                   auto_size_columns=False,
+                                   justification='center',
+                                   key='-STANDINGS TABLE-',
+                                   enable_events=True,
+                                   enable_click_events=True,
+                                   expand_x=False,
+                                   expand_y=False)
+
+
+
+
+
+        ###  adding standings tab
+        window['-TABGROUP-'].add_tab(sg.Tab(' Standings ', 
+                                            [[standings_top_heading], 
+                                             [standings_table]], 
+                                            key='-TAB STANDINGS-'))
+
+        ###  adding round 1 tab
+        window['-TABGROUP-'].add_tab(sg.Tab(' Round 1 ', 
+                                            [[]], 
+                                            key='-TAB ROUND 1-'))
+
+        ###  hiding registration tab
+        window['-TAB REGISTRATION-'].update(visible=False)
+        window['-TAB ROUND 1-'].select()
+
+
 
 
 
