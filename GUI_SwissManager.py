@@ -1,4 +1,6 @@
 import os
+import time
+import numpy
 import PySimpleGUI as sg
 
 from ParticipantRoster import ParticipantRoster
@@ -20,6 +22,75 @@ if os.path.exists(file_participants):
 sg.theme('DarkGrey15')
 FONT = 'bitstream charter'
 dx, dy = 25, 2
+
+
+def popupEditPlayer(current_name, current_rating):
+
+    popup = sg.Window('Edit Player',
+                      layout=[
+                              [sg.Column(layout=[[sg.Text('Name', font=(FONT, 14))], 
+                                                 [sg.InputText(size=(25, 3), default_text=current_name, border_width=2, font=(FONT, 14), key='-EDIT PLAYER NAME-')]]), 
+                               sg.Column(layout=[[sg.Text('Rating', font=(FONT, 14))], 
+                                                 [sg.InputText(size=(6, 3), default_text=int(current_rating), border_width=2, font=(FONT, 14), key='-EDIT PLAYER RATING-')]])], 
+                              [sg.Button('Submit', font=(FONT, 14), key='-SUBMIT-'), 
+                               sg.Button('Cancel', font=(FONT, 14), key='-CANCEL-')]
+                             ]
+                      )
+
+    event, values = popup.read()
+
+    popup.close()
+    if event == '-SUBMIT-':
+        return (values['-EDIT PLAYER NAME-'], int(values['-EDIT PLAYER RATING-']))
+    elif event == '-CANCEL-':
+        return (current_name, current_rating)
+
+
+def generate_standings_layout(registration_table, n_rounds):
+
+    ###  generating standings table
+    headings1 = ['', 'Name', 'Rating']
+    headings2 = [' ']
+    widths1 = registration_table.ColumnWidths
+    widths2 = [sum(registration_table.ColumnWidths)]
+    for i in range(n_rounds):
+        headings1 += ['vs', 'S']
+        headings2 += ['Round %i' % (i+1)]
+        widths1 += [4, 4]
+        widths2 += [8]
+    headings1 += ['Total']
+    headings2 += ['']
+    widths1 += [5]
+    widths2 += [5]
+
+    standings_top_heading = sg.Table(values=[], 
+                                     headings=headings2, 
+                                     size=(900, 0),
+                                     font=(FONT, 12),
+                                     col_widths=widths2,
+                                     hide_vertical_scroll=True,
+                                     auto_size_columns=False,
+                                     justification='center',
+                                     key='-STANDINGS TOP HEADING-',
+                                     pad=0,
+                                     expand_x=False,
+                                     expand_y=False)
+
+    standings_table = sg.Table(values=PARTICIPANTS.get_roster_list(integer_rating=True), 
+                               headings=headings1, 
+                               col_widths=widths1,
+                               size=(900, 250),
+                               font=(FONT, 12),
+                               auto_size_columns=False,
+                               justification='center',
+                               key='-STANDINGS TABLE-',
+                               pad=0,
+                               enable_events=True,
+                               enable_click_events=True,
+                               expand_x=False,
+                               expand_y=False)
+
+    return [[standings_top_heading], [standings_table]]
 
 
 
@@ -61,12 +132,6 @@ registration_table = sg.Table(values=PARTICIPANTS.get_roster_list(integer_rating
 
 
 
-registration_layout = [ [ row_add_player ], 
-                        [ registration_table, 
-                          sg.Column(pad=10, layout=[[sg.Text('Rounds : ', font=(FONT, 16)), sg.DropDown(values=[1, 2, 3, 4, 5], default_value=5, font=(FONT, 16))]])
-                        ]
-                      ]
-
 registration_layout = [ [ registration_table, 
                           sg.Column(pad=10, layout=[[sg.Text(' Name: ', font=(FONT, 14)), 
                                                      sg.InputText(size=(20, 3), border_width=2, font=(FONT, 14), key='-NEW PLAYER NAME2-')], 
@@ -80,7 +145,7 @@ registration_layout = [ [ registration_table,
                                                     [sg.Text('', font=(FONT, 20))], 
 
                                                     [sg.Text('Number of Rounds : ', font=(FONT, 14)), 
-                                                     sg.DropDown(values=[1, 2, 3, 4, 5], default_value=5, font=(FONT, 16), key='-DROPDOWN N ROUNDS-')], 
+                                                     sg.DropDown(values=[1, 2, 3, 4, 5], default_value=5, font=(FONT, 16), readonly=True, key='-DROPDOWN N ROUNDS-')], 
 
                                                     [sg.Text('', font=(FONT, 20))], 
 
@@ -110,28 +175,6 @@ window = sg.Window('Swiss Tournament Manager',
                    resizable=True)
 
 
-def popupEditPlayer(current_name, current_rating):
-
-    popup = sg.Window('Edit Player',
-                      layout=[
-                              [sg.Column(layout=[[sg.Text('Name', font=(FONT, 14))], 
-                                                 [sg.InputText(size=(25, 3), default_text=current_name, border_width=2, font=(FONT, 14), key='-EDIT PLAYER NAME-')]]), 
-                               sg.Column(layout=[[sg.Text('Rating', font=(FONT, 14))], 
-                                                 [sg.InputText(size=(6, 3), default_text=int(current_rating), border_width=2, font=(FONT, 14), key='-EDIT PLAYER RATING-')]])], 
-                              [sg.Button('Submit', font=(FONT, 14), key='-SUBMIT-'), 
-                               sg.Button('Cancel', font=(FONT, 14), key='-CANCEL-')]
-                             ]
-                      )
-
-    event, values = popup.read()
-
-    popup.close()
-    if event == '-SUBMIT-':
-        return (values['-EDIT PLAYER NAME-'], int(values['-EDIT PLAYER RATING-']))
-    elif event == '-CANCEL-':
-        return (current_name, current_rating)
-
-
 
 
 ###  Instantiating event loop for main window
@@ -139,6 +182,7 @@ while True:
 
     event, values = window.read()
     print('\n')
+    print(time.ctime())
     print('THE EVENT IS:  ', event)
     if values is not None:
         for i, (k, v) in enumerate(values.items()):
@@ -202,68 +246,61 @@ while True:
         ###  confirm that user actually wants to start round 1
         confirmation = sg.popup_yes_no('Want to start Round 1 ?', 
                                        title='Start Tournament', 
-                                       font=(FONT, 14))
+                                       font=(FONT, 18))
 
         if confirmation != 'Yes':
             continue
 
-
-        ###  generating standings table
-        headings1 = ['', 'Name', 'Rating']
-        headings2 = [' ']
-        widths1 = registration_table.ColumnWidths
-        widths2 = [sum(registration_table.ColumnWidths)]
-        for i in range(values['-DROPDOWN N ROUNDS-']):
-            headings1 += ['vs', 'S']
-            headings2 += ['Round %i' % (i+1)]
-            widths1 += [4, 4]
-            widths2 += [8]
-        headings1 += ['Total']
-        headings2 += ['']
-        widths1 += [5]
-        widths2 += [5]
-
-
-
-        standings_top_heading = sg.Table(values=[], 
-                                         headings=headings2, 
-                                         size=(900, 0),
-                                         font=(FONT, 12),
-                                         col_widths=widths2,
-                                         hide_vertical_scroll=True,
-                                         auto_size_columns=False,
-                                         justification='center',
-                                         key='-STANDINGS TOP HEADING-',
-                                         expand_x=False,
-                                         expand_y=False)
-
-
-        standings_table = sg.Table(values=PARTICIPANTS.get_roster_list(integer_rating=True), 
-                                   headings=headings1, 
-                                   col_widths=widths1,
-                                   size=(900, 250),
-                                   font=(FONT, 12),
-                                   auto_size_columns=False,
-                                   justification='center',
-                                   key='-STANDINGS TABLE-',
-                                   enable_events=True,
-                                   enable_click_events=True,
-                                   expand_x=False,
-                                   expand_y=False)
-
-
-
-
-
         ###  adding standings tab
+        standings_layout = generate_standings_layout(registration_table, values['-DROPDOWN N ROUNDS-'])
         window['-TABGROUP-'].add_tab(sg.Tab(' Standings ', 
-                                            [[standings_top_heading], 
-                                             [standings_table]], 
+                                            standings_layout, 
                                             key='-TAB STANDINGS-'))
+
+        ###  generating round 1 pairings
+
+        ###  giving BYE to lowest ranked player (for odd number of participants)
+        n = PARTICIPANTS.n_participants
+        if n%2 == 1:
+            pairings = numpy.arange(n-1).reshape((2, (n-1)//2)).T.tolist()
+            pairings.append([n-1, 'BYE'])
+        else:
+            pairings = numpy.arange(n).reshape((2, n//2)).T.tolist()
+
+        PARTICIPANTS.all_prev_pairings += ['%sv%s' % (p0, p1) for (p0, p1) in pairings]
+        PARTICIPANTS.all_prev_pairings += ['%sv%s' % (p1, p0) for (p0, p1) in pairings]
+
+
+        ###  generating layout for pairings
+        layout1, layout2 = [], []
+        for i_pair, (p0, p1) in enumerate(pairings):
+
+            t = sg.Table(values=[[p0+1, PARTICIPANTS.names[p0], ''], [p1+1, PARTICIPANTS.names[p1], '']], 
+                         headings=['', 'Table %i' % (i_pair+1), 'Score'], 
+                         size=(400, 2),
+                         font=(FONT, 12),
+                         pad=10,
+                         select_mode=sg.TABLE_SELECT_MODE_NONE,
+                         col_widths=[3, 20, 6],
+                         hide_vertical_scroll=True,
+                         auto_size_columns=False,
+                         justification='center',
+                         key='-PAIRING R1T%i-' % (i_pair+1),
+                         enable_events=True,
+                         enable_click_events=True,
+                         expand_x=False,
+                         expand_y=False)
+
+            if i_pair%2 == 0:
+                layout1.append([t])
+            else:
+                layout2.append([t])
+
 
         ###  adding round 1 tab
         window['-TABGROUP-'].add_tab(sg.Tab(' Round 1 ', 
-                                            [[]], 
+                                            [[sg.Column(layout=layout1, size=(410, 400), justification='right', expand_y=True), 
+                                              sg.Column(layout=layout2, size=(410, 400), justification='center', expand_y=True)]], 
                                             key='-TAB ROUND 1-'))
 
         ###  hiding registration tab
