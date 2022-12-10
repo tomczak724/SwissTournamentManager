@@ -92,7 +92,6 @@ def popupEnterScores(name1, name2):
             popup.close()
             return (None, None)
 
-
 def generate_standings_layout(registration_table, n_rounds):
 
     ###  generating standings table
@@ -123,7 +122,11 @@ def generate_standings_layout(registration_table, n_rounds):
                                      expand_x=False,
                                      expand_y=False)
 
-    standings_table = sg.Table(values=PARTICIPANTS.get_roster_list(integer_rating=True), 
+    table_values = PARTICIPANTS.get_roster_list(integer_rating=True)
+    for row in table_values:
+        row += ['' for i in range(n_rounds*2+1)]
+
+    standings_table = sg.Table(values=table_values, 
                                headings=headings1, 
                                col_widths=widths1,
                                size=(900, 250),
@@ -139,24 +142,6 @@ def generate_standings_layout(registration_table, n_rounds):
 
     return [[standings_top_heading], [standings_table]]
 
-
-
-row_add_player = [sg.Frame(title='', 
-                           size=(1000, 80), 
-                           border_width=3, 
-                           layout=[[sg.Frame(title='', 
-                                             border_width=0, 
-                                             layout=[[sg.Text('', font=(FONT, 12))],
-                                                     [sg.Button('Add', size=(3, 1), border_width=2, font=(FONT, 12), key='-ADD NEW PLAYER-')]]), 
-                                    sg.Frame(title='', 
-                                             border_width=0, 
-                                             layout=[[sg.Text('Name', font=(FONT, 14))], 
-                                                     [sg.InputText(size=(25, 3), border_width=2, font=(FONT, 14), key='-NEW PLAYER NAME-')]]), 
-                                    sg.Frame(title='', 
-                                             border_width=0, 
-                                             layout=[[sg.Text('Rating', font=(FONT, 14))], 
-                                                     [sg.InputText(size=(6, 3), border_width=2, font=(FONT, 14), key='-NEW PLAYER RATING-')]])
-                                     ]])]
 
 
 right_click_menu = ['', ['edit player', 'remove player', 'do nothing']]
@@ -181,13 +166,13 @@ registration_table = sg.Table(values=PARTICIPANTS.get_roster_list(integer_rating
 
 registration_layout = [ [ registration_table, 
                           sg.Column(pad=10, layout=[[sg.Text(' Name: ', font=(FONT, 14)), 
-                                                     sg.InputText(size=(20, 3), border_width=2, font=(FONT, 14), key='-NEW PLAYER NAME2-')], 
+                                                     sg.InputText(size=(20, 3), border_width=2, font=(FONT, 14), key='-NEW PLAYER NAME-')], 
 
                                                     [sg.Text('Rating: ', font=(FONT, 14)), 
-                                                     sg.InputText(size=(6, 3), border_width=2, font=(FONT, 14), key='-NEW PLAYER RATING2-')], 
+                                                     sg.InputText(size=(6, 3), border_width=2, font=(FONT, 14), key='-NEW PLAYER RATING-')], 
 
                                                     [sg.Text('     ', font=(FONT, 14)), 
-                                                     sg.Button('Add Player', border_width=2, font=(FONT, 13), key='-ADD NEW PLAYER2-')], 
+                                                     sg.Button('Add Player', border_width=2, font=(FONT, 13), key='-ADD NEW PLAYER-')], 
 
                                                     [sg.Text('', font=(FONT, 20))], 
 
@@ -258,6 +243,7 @@ while True:
                 ###  clearing input prompts
                 junk = window['-NEW PLAYER NAME-'].update(value='')
                 junk = window['-NEW PLAYER RATING-'].update(value='')
+                window.refresh()
 
             except:
                 sg.popup('Error Parsing Inputs', font=(FONT, 16))
@@ -297,6 +283,7 @@ while True:
 
         ###  adding standings tab
         standings_layout = generate_standings_layout(registration_table, values['-DROPDOWN N ROUNDS-'])
+
         window['-TABGROUP-'].add_tab(sg.Tab(' Standings ', 
                                             standings_layout, 
                                             key='-TAB STANDINGS-'))
@@ -316,7 +303,7 @@ while True:
 
 
         ###  generating layout for pairings
-        layout1, layout2 = [], []
+        layout_pairings = []
         for i_pair, (p0, p1) in enumerate(pairings):
 
             t = sg.Table(values=[[p0+1, PARTICIPANTS.names[p0], ''], [p1+1, PARTICIPANTS.names[p1], '']], 
@@ -336,24 +323,15 @@ while True:
                          expand_y=False)
 
             if i_pair%2 == 0:
-                layout1.append([t])
-            else:
-                layout2.append([t])
+                layout_pairings.append([])
 
+            layout_pairings[-1].append(t)
 
         ###  adding round 1 tab
         window['-TABGROUP-'].add_tab(sg.Tab(' Round 1 ', 
                                             [[sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND-')], 
-                                             [sg.Column(layout=layout1, 
-                                                        size=(410, 400), 
-                                                        scrollable=True, 
-                                                        vertical_scroll_only=True, 
-                                                        sbar_width=1, 
-                                                        sbar_arrow_width=1, 
-                                                        element_justification='center', 
-                                                        expand_y=True), 
-                                              sg.Column(layout=layout2, 
-                                                        size=(410, 400), 
+                                             [sg.Column(layout=layout_pairings, 
+                                                        size=(800, 400), 
                                                         scrollable=True, 
                                                         vertical_scroll_only=True, 
                                                         sbar_width=1, 
@@ -363,12 +341,52 @@ while True:
                                             key='-TAB ROUND 1-', 
                                             element_justification='center'))
 
+
+
         ###  hiding registration tab
         window['-TAB REGISTRATION-'].update(visible=False)
         window['-TAB ROUND 1-'].select()
 
 
-#popupEnterScores(name1, name2)
+
+    ###  enter scores from games
+    elif isinstance(event, tuple) and ('PAIRING R' in event[0]):
+
+        ###  parsing round and table numbers
+        idx_round, idx_table = event[0].split('PAIRING ')[1].split('T')
+        idx_round = int(idx_round.strip('R'))
+        idx_table = int(idx_table.strip('-'))        
+
+        ###  grabing values from pairing table
+        table_values = window[event[0]].Values
+        idx1, name1, junk = table_values[0]
+        idx2, name2, junk = table_values[1]
+
+        ###  prompt to enter scores
+        score1, score2 = popupEnterScores(name1, name2)
+
+        ###  enter scores into standings if valid
+        if score1 is not None:
+            table_values[0][2] = score1
+            table_values[1][2] = score2
+
+            window[event[0]].update(values=table_values)
+
+            standings_table_values = window['-STANDINGS TABLE-'].Values
+            standings_table_values[idx1-1][3+2*(idx_round-1)] = idx2
+            standings_table_values[idx1-1][4+2*(idx_round-1)] = score1
+            standings_table_values[idx2-1][3+2*(idx_round-1)] = idx1
+            standings_table_values[idx2-1][4+2*(idx_round-1)] = score2
+
+            window['-STANDINGS TABLE-'].update(values=standings_table_values)
+
+
+    elif (event == '-TABGROUP-') and (values['-TABGROUP-'] == '-TAB STANDINGS-'):
+        print('refreshing standings')
+        standings_table_values = window['-STANDINGS TABLE-'].Values
+        print(standings_table_values)
+        window['-STANDINGS TABLE-'].update(values=standings_table_values)
+        window.refresh()
 
 
 window.close()
