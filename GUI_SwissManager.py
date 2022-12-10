@@ -50,10 +50,11 @@ def popupEditPlayer(current_name, current_rating):
 
             except ValueError:
                 sg.popup_no_titlebar('Invalid Inputs', 
+                                     font=(FONT, 12), 
                                      auto_close=True, 
                                      auto_close_duration=3)
 
-        elif event == '-CANCEL-':
+        elif (event == '-CANCEL-') or (event == sg.WIN_CLOSED):
             popup.close()
             return (current_name, current_rating)
 
@@ -83,10 +84,11 @@ def popupEnterScores(name1, name2):
 
             except ValueError:
                 sg.popup_no_titlebar('Invalid Inputs', 
+                                     font=(FONT, 12), 
                                      auto_close=True, 
                                      auto_close_duration=3)
 
-        elif event == '-CANCEL-':
+        elif (event == '-CANCEL-') or (event == sg.WIN_CLOSED):
             popup.close()
             return (None, None)
 
@@ -240,9 +242,6 @@ while True:
     if event == sg.WIN_CLOSED:
         break
 
-    elif event == '-MAXIMIZE-':
-        window.maximize()
-
     ###  add a new player
     elif event == '-ADD NEW PLAYER-':
 
@@ -322,7 +321,7 @@ while True:
 
             t = sg.Table(values=[[p0+1, PARTICIPANTS.names[p0], ''], [p1+1, PARTICIPANTS.names[p1], '']], 
                          headings=['', 'Table %i' % (i_pair+1), 'Score'], 
-                         size=(400, 2),
+                         size=(300, 2),
                          font=(FONT, 12),
                          pad=10,
                          select_mode=sg.TABLE_SELECT_MODE_NONE,
@@ -344,28 +343,32 @@ while True:
 
         ###  adding round 1 tab
         window['-TABGROUP-'].add_tab(sg.Tab(' Round 1 ', 
-                                            [[sg.Column(layout=layout1, 
+                                            [[sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND-')], 
+                                             [sg.Column(layout=layout1, 
                                                         size=(410, 400), 
                                                         scrollable=True, 
-                                                        vertical_scroll_only=True,
-                                                        sbar_width=1,
-                                                        sbar_arrow_width=1,
+                                                        vertical_scroll_only=True, 
+                                                        sbar_width=1, 
+                                                        sbar_arrow_width=1, 
+                                                        element_justification='center', 
                                                         expand_y=True), 
                                               sg.Column(layout=layout2, 
                                                         size=(410, 400), 
                                                         scrollable=True, 
-                                                        vertical_scroll_only=True,
-                                                        sbar_width=1,
-                                                        sbar_arrow_width=1,
+                                                        vertical_scroll_only=True, 
+                                                        sbar_width=1, 
+                                                        sbar_arrow_width=1, 
+                                                        element_justification='center', 
                                                         expand_y=True)]], 
-                                            key='-TAB ROUND 1-'))
+                                            key='-TAB ROUND 1-', 
+                                            element_justification='center'))
 
         ###  hiding registration tab
         window['-TAB REGISTRATION-'].update(visible=False)
         window['-TAB ROUND 1-'].select()
 
 
-
+#popupEnterScores(name1, name2)
 
 
 window.close()
