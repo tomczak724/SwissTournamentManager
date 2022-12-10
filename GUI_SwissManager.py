@@ -37,13 +37,58 @@ def popupEditPlayer(current_name, current_rating):
                              ]
                       )
 
-    event, values = popup.read()
+    while True:
 
-    popup.close()
-    if event == '-SUBMIT-':
-        return (values['-EDIT PLAYER NAME-'], int(values['-EDIT PLAYER RATING-']))
-    elif event == '-CANCEL-':
-        return (current_name, current_rating)
+        event, values = popup.read()
+
+        if event == '-SUBMIT-':
+            try:
+                new_name = values['-EDIT PLAYER NAME-']
+                new_rating = int(values['-EDIT PLAYER RATING-'])
+                popup.close()
+                return (new_name, new_rating)
+
+            except ValueError:
+                sg.popup_no_titlebar('Invalid Inputs', 
+                                     auto_close=True, 
+                                     auto_close_duration=3)
+
+        elif event == '-CANCEL-':
+            popup.close()
+            return (current_name, current_rating)
+
+def popupEnterScores(name1, name2):
+
+    popup = sg.Window('Enter Scores', 
+                      layout=[
+                              [sg.Column(layout=[[sg.Text(name1, font=(FONT, 14))], 
+                                                 [sg.Text(name2, font=(FONT, 14))]]), 
+                               sg.Column(layout=[[sg.InputText(size=(4, 3), border_width=2, font=(FONT, 14), justification='center', key='-SUBMIT SCORE PLAYER 1-')], 
+                                                 [sg.InputText(size=(4, 3), border_width=2, font=(FONT, 14), justification='center', key='-SUBMIT SCORE PLAYER 2-')]])], 
+                              [sg.Button('Submit', font=(FONT, 14), key='-SUBMIT-'), 
+                               sg.Button('Cancel', font=(FONT, 14), key='-CANCEL-')]
+                             ]
+                      )
+
+    while True:
+
+        event, values = popup.read()
+
+        if event == '-SUBMIT-':
+            try:
+                score1 = float(values['-SUBMIT SCORE PLAYER 1-'])
+                score2 = float(values['-SUBMIT SCORE PLAYER 2-'])
+                popup.close()
+                return (score1, score2)
+
+            except ValueError:
+                sg.popup_no_titlebar('Invalid Inputs', 
+                                     auto_close=True, 
+                                     auto_close_duration=3)
+
+        elif event == '-CANCEL-':
+            popup.close()
+            return (None, None)
 
 
 def generate_standings_layout(registration_table, n_rounds):
@@ -299,8 +344,20 @@ while True:
 
         ###  adding round 1 tab
         window['-TABGROUP-'].add_tab(sg.Tab(' Round 1 ', 
-                                            [[sg.Column(layout=layout1, size=(410, 400), justification='right', expand_y=True), 
-                                              sg.Column(layout=layout2, size=(410, 400), justification='center', expand_y=True)]], 
+                                            [[sg.Column(layout=layout1, 
+                                                        size=(410, 400), 
+                                                        scrollable=True, 
+                                                        vertical_scroll_only=True,
+                                                        sbar_width=1,
+                                                        sbar_arrow_width=1,
+                                                        expand_y=True), 
+                                              sg.Column(layout=layout2, 
+                                                        size=(410, 400), 
+                                                        scrollable=True, 
+                                                        vertical_scroll_only=True,
+                                                        sbar_width=1,
+                                                        sbar_arrow_width=1,
+                                                        expand_y=True)]], 
                                             key='-TAB ROUND 1-'))
 
         ###  hiding registration tab
