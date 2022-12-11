@@ -94,21 +94,21 @@ def popupEnterScores(name1, name2):
 def popupStandings():
 
     table_headings = ['', 'Name', 'Rating']
-    table_widths = [3, 20, 6]
+    table_widths = [3, 20, 7]
     table_values = PARTICIPANTS.get_roster_list(integer_rating=True)
 
     for idx in PARTICIPANTS.idx:
 
-        for i_round in range(len(PARTICIPANTS.round_scores)):
+        for i_round in range(len(PARTICIPANTS.all_round_scores)):
 
             if idx == 0:
                 table_headings += ['Round %i' % (i_round+1)]
-                table_widths += [4]
-            table_values[idx] += [PARTICIPANTS.round_scores[idx]]
+                table_widths += [8]
+            table_values[idx] += [PARTICIPANTS.all_round_scores[i_round][idx]]
 
         if idx == 0:
             table_headings += ['Total']
-            table_widths += [6]
+            table_widths += [10]
         table_values[idx] += [PARTICIPANTS.total_scores[idx]]
 
 
@@ -296,6 +296,10 @@ while True:
         PARTICIPANTS.all_prev_pairings += ['%sv%s' % (p0, p1) for (p0, p1) in pairings]
         PARTICIPANTS.all_prev_pairings += ['%sv%s' % (p1, p0) for (p0, p1) in pairings]
 
+        opponents = [PARTICIPANTS.idx[j] for i, j in pairings] + [PARTICIPANTS.idx[i] for i, j in pairings]
+        PARTICIPANTS.opponents.append(opponents)
+
+        PARTICIPANTS.current_round_scores = numpy.array([numpy.nan]*PARTICIPANTS.n_participants)
 
         ###  generating layout for pairings
         layout_pairings = []
@@ -350,7 +354,7 @@ while True:
     elif (event == '-GET STANDINGS-'):
         popupStandings()
 
-    ###  enter scores from games
+    ###  prompt to enter scores from games
     elif isinstance(event, tuple) and ('PAIRING R' in event[0]):
 
         ###  parsing round and table numbers
@@ -375,18 +379,37 @@ while True:
         if score1 is not None:
             table_values[0][2] = score1
             table_values[1][2] = score2
-
             window[event[0]].update(values=table_values)
 
-            standings_table_values = window['-STANDINGS TABLE-'].Values
-            standings_table_values[idx1-1][3+2*(idx_round-1)] = idx2
-            standings_table_values[idx1-1][4+2*(idx_round-1)] = score1
-            standings_table_values[idx2-1][3+2*(idx_round-1)] = idx1
-            standings_table_values[idx2-1][4+2*(idx_round-1)] = score2
+            PARTICIPANTS.current_round_scores[idx1-1] = score1
+            PARTICIPANTS.current_round_scores[idx2-1] = score2
 
-            window['-STANDINGS TABLE-'].update(values=standings_table_values)
+    ###  start next round
+    elif (event == '-START NEXT ROUND-'):
+
+        ###  confirm that all scores have been entered
+        if numpy.isnan(PARTICIPANTS.current_round_scores).any():
+            sg.popup_no_titlebar('Round not finished', 
+                                 font=(FONT, 16), 
+                                 auto_close=True, 
+                                 auto_close_duration=3)
+            continue
 
 
+        ###  confirm that user actually wants to start next round
+        confirmation = sg.popup_yes_no('Want to start Round %i ?' % (CURRENT_ROUND+1), 
+                                       title='Start Tournament', 
+                                       font=(FONT, 18))
+
+        if confirmation != 'Yes':
+            continue
+
+
+        ###  logging scores from finished round and prepping for next
+        PARTICIPANTS.total_scores += PARTICIPANTS.current_round_scores
+        PARTICIPANTS.all_round_scores.append(PARTICIPANTS.current_round_scores.tolist())
+        PARTICIPANTS.current_round_scores = numpy.array([numpy.nan]*PARTICIPANTS.n_participants)
+        CURRENT_ROUND += 1
 
 
 window.close()

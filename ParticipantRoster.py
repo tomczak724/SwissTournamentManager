@@ -15,7 +15,8 @@ class ParticipantRoster:
         self.idx = []
 
         self.opponents = []
-        self.round_scores = []
+        self.current_round_scores = []
+        self.all_round_scores = []
         self.total_scores = []
 
         self.all_prev_pairings = []
