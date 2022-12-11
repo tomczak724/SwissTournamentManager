@@ -59,12 +59,18 @@ def popupEditPlayer(current_name, current_rating):
 
 def popupEnterScores(name1, name2):
 
+    default_text1, default_text2 = '', ''
+    if name1 == 'BYE':
+        default_text1 = '0'
+    if name2 == 'BYE':
+        default_text2 = '0'
+
     popup = sg.Window('Enter Scores', 
                       layout=[
                               [sg.Column(layout=[[sg.Text(name1, font=(FONT, 14))], 
                                                  [sg.Text(name2, font=(FONT, 14))]]), 
-                               sg.Column(layout=[[sg.InputText(size=(4, 3), border_width=2, font=(FONT, 14), justification='center', key='-SUBMIT SCORE PLAYER 1-')], 
-                                                 [sg.InputText(size=(4, 3), border_width=2, font=(FONT, 14), justification='center', key='-SUBMIT SCORE PLAYER 2-')]])], 
+                               sg.Column(layout=[[sg.InputText(size=(4, 3), border_width=2, default_text=default_text1, font=(FONT, 14), justification='center', key='-SUBMIT SCORE PLAYER 1-')], 
+                                                 [sg.InputText(size=(4, 3), border_width=2, default_text=default_text2, font=(FONT, 14), justification='center', key='-SUBMIT SCORE PLAYER 2-')]])], 
                               [sg.Button('Submit', font=(FONT, 14), key='-SUBMIT-'), 
                                sg.Button('Cancel', font=(FONT, 14), key='-CANCEL-')]
                              ]
@@ -170,28 +176,25 @@ registration_table = sg.Table(values=PARTICIPANTS.get_roster_list(integer_rating
 
 
 registration_layout = [ [ registration_table, 
-                          sg.Column(pad=10, layout=[[sg.Text(' Name: ', font=(FONT, 14)), 
-                                                     sg.InputText(size=(20, 3), border_width=2, font=(FONT, 14), key='-NEW PLAYER NAME-')], 
+                          sg.Column(pad=50, 
+                                    element_justification='left',
+                                    vertical_alignment='top', 
+                                    layout=[
+                                            [sg.Button('Start Round 1', border_width=2, font=(FONT, 18), key='-START ROUND 1-'), 
+                                             sg.Button('Clear Roster', border_width=2, font=(FONT, 18), key='-CLEAR ROSTER-')], 
 
-                                                    [sg.Text('Rating: ', font=(FONT, 14)), 
-                                                     sg.InputText(size=(6, 3), border_width=2, font=(FONT, 14), key='-NEW PLAYER RATING-')], 
+                                            [sg.Text('', font=(FONT, 14))], 
 
-                                                    [sg.Text('     ', font=(FONT, 14)), 
-                                                     sg.Button('Add Player', border_width=2, font=(FONT, 13), key='-ADD NEW PLAYER-')], 
+                                            [sg.Text(' Name: ', font=(FONT, 14)), 
+                                             sg.InputText(size=(20, 3), border_width=2, font=(FONT, 14), key='-NEW PLAYER NAME-')], 
 
-                                                    [sg.Text('', font=(FONT, 20))], 
+                                            [sg.Text('Rating: ', font=(FONT, 14)), 
+                                             sg.InputText(size=(6, 3), border_width=2, font=(FONT, 14), key='-NEW PLAYER RATING-')], 
 
-                                                    [sg.Text('Number of Rounds : ', font=(FONT, 14)), 
-                                                     sg.DropDown(values=[1, 2, 3, 4, 5], default_value=5, font=(FONT, 16), readonly=True, key='-DROPDOWN N ROUNDS-')], 
-
-                                                    [sg.Text('', font=(FONT, 20))], 
-
-                                                    [sg.Button('Start Round 1', border_width=2, font=(FONT, 18), key='-START ROUND 1-')]
-
-                                                    
-                                                      ])
-                        ]
-                      ]
+                                            [sg.Text('     ', font=(FONT, 14)), 
+                                             sg.Button('Add Player', border_width=2, font=(FONT, 14), key='-ADD NEW PLAYER-')]
+                                            ])
+                        ] ]
 
 
 ###  Instantiating TabGroup to contain tabs for registration and rounds
@@ -292,14 +295,16 @@ while True:
         n = PARTICIPANTS.n_participants
         if n%2 == 1:
             pairings = numpy.arange(n-1).reshape((2, (n-1)//2)).T.tolist()
+            opponents = [PARTICIPANTS.idx[j] for i, j in pairings] + [PARTICIPANTS.idx[i] for i, j in pairings]
             pairings.append([n-1, 'BYE'])
+            opponents.append('BYE')
         else:
             pairings = numpy.arange(n).reshape((2, n//2)).T.tolist()
+            opponents = [PARTICIPANTS.idx[j] for i, j in pairings] + [PARTICIPANTS.idx[i] for i, j in pairings]
 
+        ###  recording pairings
         PARTICIPANTS.all_prev_pairings += ['%sv%s' % (p0, p1) for (p0, p1) in pairings]
         PARTICIPANTS.all_prev_pairings += ['%sv%s' % (p1, p0) for (p0, p1) in pairings]
-
-        opponents = [PARTICIPANTS.idx[j] for i, j in pairings] + [PARTICIPANTS.idx[i] for i, j in pairings]
         PARTICIPANTS.opponents.append(opponents)
 
         PARTICIPANTS.current_round_scores = numpy.array([numpy.nan]*PARTICIPANTS.n_participants)
@@ -308,7 +313,12 @@ while True:
         layout_pairings = []
         for i_pair, (p0, p1) in enumerate(pairings):
 
-            t = sg.Table(values=[[p0+1, PARTICIPANTS.names[p0], ''], [p1+1, PARTICIPANTS.names[p1], '']], 
+            if (p1 == 'BYE'):
+                vals = [[p0+1, PARTICIPANTS.names[p0], ''], ['', p1, '']]
+            else:
+                vals = [[p0+1, PARTICIPANTS.names[p0], ''], [p1+1, PARTICIPANTS.names[p1], '']]
+
+            t = sg.Table(values=vals, 
                          headings=['', 'Table %i' % (i_pair+1), 'Score'], 
                          size=(300, 2),
                          font=(FONT, 12),
@@ -381,8 +391,10 @@ while True:
             table_values[1][2] = score2
             window[event[0]].update(values=table_values)
 
-            PARTICIPANTS.current_round_scores[idx1-1] = score1
-            PARTICIPANTS.current_round_scores[idx2-1] = score2
+            if name1 != 'BYE':
+                PARTICIPANTS.current_round_scores[idx1-1] = score1
+            if name2 != 'BYE':
+                PARTICIPANTS.current_round_scores[idx2-1] = score2
 
     ###  start next round
     elif (event == '-START NEXT ROUND %i-' % CURRENT_ROUND):
@@ -405,6 +417,7 @@ while True:
             continue
 
         ###  removing start round button from finished round
+        window['-START NEXT ROUND %i-' % CURRENT_ROUND].update(visible=False)
         
 
         ###  logging scores from finished round and prepping for next
