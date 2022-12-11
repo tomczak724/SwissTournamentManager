@@ -11,7 +11,7 @@ CURRENT_ROUND = 0
 
 PARTICIPANTS = ParticipantRoster()
 
-file_participants = 'registrant_list.csv'
+file_participants = 'registrant_list_short.csv'
 if os.path.exists(file_participants):
     with open(file_participants, 'r') as fopen:
         for line in fopen.readlines():
@@ -111,8 +111,11 @@ def popupStandings():
             table_widths += [10]
         table_values[idx] += [PARTICIPANTS.total_scores[idx]]
 
+    ###  converting table_values to a structured array
+    table_values_struc = numpy.array([tuple(row) for row in table_values], 
+                                     dtype=[(field, 'U50') for field in table_headings])
 
-    standings_table = sg.Table(values=table_values, 
+    standings_table = sg.Table(values=numpy.sort(table_values_struc, order=['Total', 'Rating'])[::-1].tolist(), 
                                headings=table_headings, 
                                col_widths=table_widths,
                                size=(900, 250),
@@ -327,10 +330,11 @@ while True:
             layout_pairings[-1].append(t)
 
         ###  adding round 1 tab
+        CURRENT_ROUND = 1
         window['-TABGROUP-'].add_tab(sg.Tab(' Round 1 ', 
-                                            [[sg.Button('Standings', font=(FONT, 16), key='-GET STANDINGS-'), 
-                                              sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND-'), 
-                                              sg.Button('End Tournament', font=(FONT, 16), key='-END TOURNAMENT-')], 
+                                            [[sg.Button('Standings', font=(FONT, 16), key='-GET STANDINGS %i-' % CURRENT_ROUND), 
+                                              sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND %i-' % CURRENT_ROUND), 
+                                              sg.Button('End Tournament', font=(FONT, 16), key='-END TOURNAMENT %i-' % CURRENT_ROUND)], 
                                              [sg.Column(layout=layout_pairings, 
                                                         size=(800, 400), 
                                                         scrollable=True, 
@@ -342,16 +346,12 @@ while True:
                                             key='-TAB ROUND 1-', 
                                             element_justification='center'))
 
-
-
         ###  hiding registration tab
         window['-TAB REGISTRATION-'].update(visible=False)
         window['-TAB ROUND 1-'].select()
 
-        CURRENT_ROUND = 1
-
     ###  show standings table
-    elif (event == '-GET STANDINGS-'):
+    elif ('GET STANDINGS' in event):
         popupStandings()
 
     ###  prompt to enter scores from games
@@ -385,7 +385,7 @@ while True:
             PARTICIPANTS.current_round_scores[idx2-1] = score2
 
     ###  start next round
-    elif (event == '-START NEXT ROUND-'):
+    elif (event == '-START NEXT ROUND %i-' % CURRENT_ROUND):
 
         ###  confirm that all scores have been entered
         if numpy.isnan(PARTICIPANTS.current_round_scores).any():
@@ -404,12 +404,37 @@ while True:
         if confirmation != 'Yes':
             continue
 
+        ###  removing start round button from finished round
+        
 
         ###  logging scores from finished round and prepping for next
         PARTICIPANTS.total_scores += PARTICIPANTS.current_round_scores
         PARTICIPANTS.all_round_scores.append(PARTICIPANTS.current_round_scores.tolist())
         PARTICIPANTS.current_round_scores = numpy.array([numpy.nan]*PARTICIPANTS.n_participants)
         CURRENT_ROUND += 1
+
+
+        ###  adding tab for next round
+        window['-TABGROUP-'].add_tab(sg.Tab(' Round %i ' % CURRENT_ROUND, 
+                                            [[sg.Button('Standings', font=(FONT, 16), key='-GET STANDINGS %i-' % CURRENT_ROUND), 
+                                              sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND %i-' % CURRENT_ROUND), 
+                                              sg.Button('End Tournament', font=(FONT, 16), key='-END TOURNAMENT %i-' % CURRENT_ROUND)], 
+                                             [sg.Column(layout=[[]], 
+                                                        size=(800, 400), 
+                                                        scrollable=True, 
+                                                        vertical_scroll_only=True, 
+                                                        sbar_width=1, 
+                                                        sbar_arrow_width=1, 
+                                                        element_justification='center', 
+                                                        expand_y=True)]], 
+                                            key='-TAB ROUND %i-' % CURRENT_ROUND, 
+                                            element_justification='center'))
+
+
+
+        ###  hiding registration tab
+        window['-TAB ROUND %i-' % CURRENT_ROUND].select()
+
 
 
 window.close()
