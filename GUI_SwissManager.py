@@ -1,6 +1,7 @@
 import os
 import time
 import numpy
+import itertools
 import PySimpleGUI as sg
 
 from ParticipantRoster import ParticipantRoster
@@ -282,7 +283,7 @@ while True:
     elif (CURRENT_ROUND == 0) and (event == '-START ROUND 1-'):
 
         ###  confirm that user actually wants to start round 1
-        confirmation = sg.popup_yes_no('Want to start Round 1 ?', 
+        confirmation = sg.popup_yes_no('Ready to start Round 1 ?', 
                                        title='Start Tournament', 
                                        font=(FONT, 18))
 
@@ -409,7 +410,7 @@ while True:
 
 
         ###  confirm that user actually wants to start next round
-        confirmation = sg.popup_yes_no('Want to start Round %i ?' % (CURRENT_ROUND+1), 
+        confirmation = sg.popup_yes_no('Ready to start Round %i ?' % (CURRENT_ROUND+1), 
                                        title='Start Tournament', 
                                        font=(FONT, 18))
 
@@ -427,12 +428,191 @@ while True:
         CURRENT_ROUND += 1
 
 
+
+        ###  GENERATING PAIRINGS - FIDE Dutch System
+        ###  https://handbook.fide.com/chapter/C0403
+
+        ###  start by simply pairng top half v. bottom half for all unique score groups
+
+        ###  checking number of participants in each score group
+        ###  For 12 participants, after round 1 with, four win/loss and two draws
+        ###  >>> score_groups = [0., 0.5, 1.]
+        scores = numpy.unique(PARTICIPANTS.total_scores)
+
+        ###  reversing order so that highest score comes first
+        scores = numpy.sort(scores)[::-1]
+
+        ###  constructing score groups (SG)
+        score_groups = [PARTICIPANTS.idx[PARTICIPANTS.total_scores==s].tolist() for s in scores]
+
+        ###  empty array to hold candidate pairing
+        candidate_pairing = -numpy.ones(PARTICIPANTS.n_participants, dtype=int)
+
+        ###  iterating over score groups
+        for i_score_group, score_group in enumerate(score_groups):
+
+
+            ###  generating subgroups s1, s1 (top half, bottom half)
+            max_pairs = len(score_group) // 2
+            s1 = score_group[:max_pairs]
+            s2 = score_group[max_pairs:]
+            s1_candidate = []
+            s2_candidate = []
+
+            ###  iterating through all transpositions of s2 (i.e. permutations)
+            for s2_t in itertools.permutations(s2, max_pairs):
+
+                ###  checking if pairing with s1 is valid
+                n_violations = 0
+
+                ###  checking for pairings that occurred in a previous round
+                for idx1, idx2 in zip(s1, s2_t):
+                    if '%iv%i'%(idx1, idx2) in PARTICIPANTS.all_prev_pairings:
+                        n_violations += 1
+
+                ###  stop checking if no violations
+                if n_violations == 0:
+                    s1_candidate = s1
+                    s2_candidate = s2_t
+                    break
+
+            ###  if no valid transposition of s2 exists, test swapping residents between s1 and s2
+            if (len(score_group) > 1) and (n_violations > 0):
+                found_valid_swapping = False
+
+                ###  iterating over number of players to swap [1, 2, 3, ... ]
+                for n_swap in range(1, max_pairs//2):
+
+                    ###  generating all combinations of (s1, s2) with `n_swap` residents
+                    for (s1_swap, s2_swap) in self._swap_residents_s1_s2(s1, s2, n_swap):
+
+                        ###  iterating through all transpositions of s2_swap (i.e. permutations)
+                        for s2_swap_t in itertools.permutations(s2_swap, max_pairs):
+
+                            ###  checking if pairing with s1 is valid
+                            n_violations = 0
+
+                            ###  checking for pairings that occurred in a previous round
+                            for idx1, idx2 in zip(s1_swap, s2_swap_t):
+                                if '%iv%i'%(idx1, idx2) in PARTICIPANTS.all_prev_pairings:
+                                    n_violations += 1
+
+                            ###  stop checking if no violations
+                            if n_violations == 0:
+                                found_valid_swapping = True
+                                s1_candidate = s1_swap
+                                s2_candidate = s2_swap_t
+                                break
+
+                        ###  break swap combinations if a valid swapping of residents is found
+                        if found_valid_swapping == True:
+                            break
+
+                    ###  break n_swap if a valid swapping of residents is found
+                    if found_valid_swapping == True:
+                        break
+
+
+            ###  if only one participant in this scoregroup either downfloat or assign BYE
+            if len(score_group) == 1:
+
+                ###  downfloat to next scoregroup
+                if i_score_group < len(score_groups)-1:
+                    score_groups[i_score_group+1] = score_group + score_groups[i_score_group+1]
+
+                ###  or assign BYE
+                else:
+                    candidate_pairing[score_group[0]] = 'BYE'
+
+
+            ###  valid s2 transposition found, record candidate pairings
+            elif n_violations == 0:
+
+                ###  adding candidate pairings
+                for idx, idx_opp in zip(s1_candidate, s2_candidate):
+                    candidate_pairing[idx] = idx_opp
+                    candidate_pairing[idx_opp] = idx
+
+                ###  if odd number of players either downfloat or assign BYE
+                if len(score_group)%2 == 1:
+                    idx_downfloater = list(set(score_group) - set(s1_candidate) - set(s2_candidate))[0]
+
+                    ###  downfloat to next scoregroup
+                    if i_score_group < len(score_groups)-1:
+                        score_groups[i_score_group+1] = [idx_downfloater] + score_groups[i_score_group+1]
+
+                    ###  or assign BYE
+                    else:
+                        candidate_pairing[idx_downfloater] = 'BYE'
+
+
+            ###  TESTING IDEA OF DOWNFLOATING ALL MEMBERS OF 
+            ###  SCOREGROUP IF NO VALID CANDIDATE PAIRING IS FOUND
+            else:
+
+                ###  downfloat to next scoregroup
+                if i_score_group < len(score_groups)-1:
+                    for idx_downfloater in score_group:
+                        score_groups[i_score_group+1] = [idx_downfloater] + score_groups[i_score_group+1]
+
+
+        print('\nCANDIDATE PAIRING')
+        str1, str2 = '', ''
+        for idx, idx_opp in enumerate(candidate_pairing):
+            str1 += '%3i ' % idx
+            str2 += '%3i ' % idx_opp
+        print(str1)
+        print(str2)
+
+
+
+
+
+        ###  adding valid candidate pairing to PARTICIPANTS
+        PARTICIPANTS.opponents.append(candidate_pairing)
+
+
+        ###  generating layout for pairings
+        layout_pairings = []
+
+        for i_pair, p1 in enumerate(candidate_pairing[:PARTICIPANTS.n_participants//2]):
+
+            p0 = candidate_pairing[p1]
+            if (p0 == 'BYE'):
+                vals = [[p1+1, PARTICIPANTS.names[p1], ''], ['', p0, '']]
+            elif (p1 == 'BYE'):
+                vals = [[p0+1, PARTICIPANTS.names[p0], ''], ['', p1, '']]
+            else:
+                vals = [[p0+1, PARTICIPANTS.names[p0], ''], [p1+1, PARTICIPANTS.names[p1], '']]
+
+            t = sg.Table(values=vals, 
+                         headings=['', 'Table %i' % (i_pair+1), 'Score'], 
+                         size=(300, 2),
+                         font=(FONT, 12),
+                         pad=10,
+                         select_mode=sg.TABLE_SELECT_MODE_NONE,
+                         col_widths=[3, 20, 6],
+                         hide_vertical_scroll=True,
+                         auto_size_columns=False,
+                         justification='center',
+                         key='-PAIRING R%iT%i-' % (CURRENT_ROUND, i_pair+1),
+                         enable_events=True,
+                         enable_click_events=True,
+                         expand_x=False,
+                         expand_y=False)
+
+            if i_pair%2 == 0:
+                layout_pairings.append([])
+
+            layout_pairings[-1].append(t)
+
+
         ###  adding tab for next round
         window['-TABGROUP-'].add_tab(sg.Tab(' Round %i ' % CURRENT_ROUND, 
                                             [[sg.Button('Standings', font=(FONT, 16), key='-GET STANDINGS %i-' % CURRENT_ROUND), 
                                               sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND %i-' % CURRENT_ROUND), 
                                               sg.Button('End Tournament', font=(FONT, 16), key='-END TOURNAMENT %i-' % CURRENT_ROUND)], 
-                                             [sg.Column(layout=[[]], 
+                                             [sg.Column(layout=layout_pairings, 
                                                         size=(800, 400), 
                                                         scrollable=True, 
                                                         vertical_scroll_only=True, 
