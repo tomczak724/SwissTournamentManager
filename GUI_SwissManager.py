@@ -12,7 +12,7 @@ CURRENT_ROUND = 0
 
 PARTICIPANTS = ParticipantRoster()
 
-file_participants = 'registrant_list_short.csv'
+file_participants = 'registrant_list.csv'
 if os.path.exists(file_participants):
     with open(file_participants, 'r') as fopen:
         for line in fopen.readlines():
@@ -153,6 +153,83 @@ def popupStandings():
 
     window_standings.close()
 
+def popupEditPairings():
+
+    nominal_pairings = PARTICIPANTS.opponents[-1]
+
+    player_list = ['%.1f   %s' % (score, name) for score, name in zip(PARTICIPANTS.total_scores, PARTICIPANTS.names)]
+
+
+
+    layout_pairings = [[sg.Button('Submit', border_width=2, font=(FONT, 16), key='-SUBMIT CUSTOM PAIRINGS-'), 
+                        sg.Button('Cancel', border_width=2, font=(FONT, 16), key='-CANCEL CUSTOM PAIRINGS-')]]
+
+    for idx, idx_opp in enumerate(nominal_pairings):
+
+        if idx == 'BYE':
+            continue
+        elif idx_opp == 'BYE':
+            default_opp = 'BYE'
+        else:
+            default_opp = PARTICIPANTS.names[idx_opp]
+
+            t = sg.Table(values=[], 
+                         headings=['Table %i' % (idx+1)], 
+                         size=(300, 0),
+                         font=(FONT, 12),
+                         pad=0,
+                         select_mode=sg.TABLE_SELECT_MODE_NONE,
+                         col_widths=[25],
+                         hide_vertical_scroll=True,
+                         auto_size_columns=False,
+                         justification='center',
+                         expand_x=False,
+                         expand_y=False)
+
+            if idx%2 == 0:
+                layout_pairings.append([])
+                layout_pairings.append([])
+                layout_pairings.append([])
+                layout_pairings.append([])
+            else:
+                layout_pairings[-3].append(sg.Text(' '*20, pad=0, font=(FONT, 12)))
+                layout_pairings[-2].append(sg.Text(' '*20, pad=0, font=(FONT, 12)))
+                layout_pairings[-1].append(sg.Text(' '*20, pad=0, font=(FONT, 12)))
+
+
+            layout_pairings[-4].append(sg.Text(' ', pad=0, font=(FONT, 12)))
+            layout_pairings[-3].append(t) 
+            layout_pairings[-2].append(sg.DropDown(values=player_list, 
+                                                   pad=0, 
+                                                   readonly=True, 
+                                                   size=(26, 1), 
+                                                   font=(FONT, 12)))
+            layout_pairings[-1].append(sg.DropDown(values=player_list, 
+                                                   pad=0, 
+                                                   readonly=True, 
+                                                   size=(26, 1), 
+                                                   font=(FONT, 12)))
+
+
+    window_edit_pairings = sg.Window('Edit Pairings for Round %i' % CURRENT_ROUND, 
+                                     layout_pairings, 
+                                     location=(50, 0), 
+                                     size=(850, 670), 
+                                     sbar_arrow_width=1,
+                                     element_justification='left', 
+                                     resizable=True)
+
+    while True:
+
+        event, values = window_edit_pairings.read()
+
+        if event == sg.WIN_CLOSED:
+            break
+
+    window_edit_pairings.close()
+
+
+
 
 
 
@@ -211,8 +288,9 @@ layout = [[sg.TabGroup(tab_group_layout,
 
 window = sg.Window('Swiss Tournament Manager', 
                    layout, 
-                   location=(50, 0),
+                   location=(50, 0), 
                    size=(850, 670), 
+                   element_justification='center', 
                    resizable=True)
 
 
@@ -304,8 +382,6 @@ while True:
             opponents = [PARTICIPANTS.idx[j] for i, j in pairings] + [PARTICIPANTS.idx[i] for i, j in pairings]
 
         ###  recording pairings
-        PARTICIPANTS.all_prev_pairings += ['%sv%s' % (p0, p1) for (p0, p1) in pairings]
-        PARTICIPANTS.all_prev_pairings += ['%sv%s' % (p1, p0) for (p0, p1) in pairings]
         PARTICIPANTS.opponents.append(opponents)
 
         PARTICIPANTS.current_round_scores = numpy.array([numpy.nan]*PARTICIPANTS.n_participants)
@@ -344,6 +420,7 @@ while True:
         CURRENT_ROUND = 1
         window['-TABGROUP-'].add_tab(sg.Tab(' Round 1 ', 
                                             [[sg.Button('Standings', font=(FONT, 16), key='-GET STANDINGS %i-' % CURRENT_ROUND), 
+                                              sg.Button('Edit Pairings', font=(FONT, 16), key='-EDIT PAIRINGS %i-' % CURRENT_ROUND), 
                                               sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND %i-' % CURRENT_ROUND), 
                                               sg.Button('End Tournament', font=(FONT, 16), key='-END TOURNAMENT %i-' % CURRENT_ROUND)], 
                                              [sg.Column(layout=layout_pairings, 
@@ -364,6 +441,10 @@ while True:
     ###  show standings table
     elif ('GET STANDINGS' in event):
         popupStandings()
+
+    ###  prompt to edit round pairings
+    elif ('EDIT PAIRINGS' in event):
+        popupEditPairings()
 
     ###  prompt to enter scores from games
     elif isinstance(event, tuple) and ('PAIRING R' in event[0]):
@@ -417,9 +498,13 @@ while True:
         if confirmation != 'Yes':
             continue
 
-        ###  removing start round button from finished round
+        ###  removing edit pairings and start round buttons from finished round
+        window['-EDIT PAIRINGS %i-' % CURRENT_ROUND].update(visible=False)
         window['-START NEXT ROUND %i-' % CURRENT_ROUND].update(visible=False)
-        
+
+        ###  logging previous opponent pairings
+        PARTICIPANTS.all_prev_pairings += ['%sv%s' % (p0, p1) for (p0, p1) in pairings]
+        PARTICIPANTS.all_prev_pairings += ['%sv%s' % (p1, p0) for (p0, p1) in pairings]
 
         ###  logging scores from finished round and prepping for next
         PARTICIPANTS.total_scores += PARTICIPANTS.current_round_scores
@@ -610,6 +695,7 @@ while True:
         ###  adding tab for next round
         window['-TABGROUP-'].add_tab(sg.Tab(' Round %i ' % CURRENT_ROUND, 
                                             [[sg.Button('Standings', font=(FONT, 16), key='-GET STANDINGS %i-' % CURRENT_ROUND), 
+                                              sg.Button('Edit Pairings', font=(FONT, 16), key='-EDIT PAIRINGS %i-' % CURRENT_ROUND), 
                                               sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND %i-' % CURRENT_ROUND), 
                                               sg.Button('End Tournament', font=(FONT, 16), key='-END TOURNAMENT %i-' % CURRENT_ROUND)], 
                                              [sg.Column(layout=layout_pairings, 
