@@ -155,6 +155,7 @@ def popupStandings():
 
 def popupCustomPairings():
 
+
     ###  grabbing participant info
     ###  and instantiating custom pairing variables
     nominal_pairings = PARTICIPANTS.opponents[-1]
@@ -162,10 +163,9 @@ def popupCustomPairings():
     candidate_pairing = []
     candidate_byes = []
 
-
+    n_tables = len(nominal_pairings) // 2
     layout_pairings = []
-
-    for idx in range(len(nominal_pairings)//2):
+    for idx in range(n_tables):
 
         t = sg.Table(values=[], 
                      headings=['Table %i' % (idx+1)], 
@@ -174,7 +174,7 @@ def popupCustomPairings():
                      font=(FONT, 12),
                      pad=0,
                      select_mode=sg.TABLE_SELECT_MODE_NONE,
-                     col_widths=[25],
+                     col_widths=[26],
                      hide_vertical_scroll=True,
                      auto_size_columns=False,
                      justification='center',
@@ -194,19 +194,22 @@ def popupCustomPairings():
 
         layout_pairings[-4].append(sg.Text(' ', pad=0, font=(FONT, 12), key='-WHITESPACE %iD'%(idx+1)))
         layout_pairings[-3].append(t) 
-        layout_pairings[-2].append(sg.DropDown(values=player_list, 
-                                               pad=0, 
-                                               key='-DROPDOWN TABLE%i PLAYER1-'%(idx+1), 
-                                               readonly=True, 
-                                               size=(26, 1), 
-                                               font=(FONT, 12)))
-        layout_pairings[-1].append(sg.DropDown(values=player_list, 
-                                               pad=0, 
-                                               key='-DROPDOWN TABLE%i PLAYER2-'%(idx+1), 
-                                               readonly=True, 
-                                               size=(26, 1), 
-                                               font=(FONT, 12)))
-
+        layout_pairings[-2].append(sg.ButtonMenu(button_text=' ', 
+                                                 menu_def=['junk', [' ']+player_list], 
+                                                 pad=0, 
+                                                 key='-BUTTONMENU TABLE%i PLAYER1-'%(idx+1), 
+                                                 size=(28, 1), 
+                                                 border_width=0, 
+                                                 text_color='white', 
+                                                 font=(FONT, 12)))
+        layout_pairings[-1].append(sg.ButtonMenu(button_text=' ', 
+                                                 menu_def=['junk', [' ']+player_list], 
+                                                 pad=0, 
+                                                 key='-BUTTONMENU TABLE%i PLAYER2-'%(idx+1), 
+                                                 size=(28, 1), 
+                                                 border_width=0, 
+                                                 text_color='white', 
+                                                 font=(FONT, 12)))
 
 
     ###  table for assigning BYES
@@ -232,10 +235,11 @@ def popupCustomPairings():
                          expand_x=False,
                          expand_y=False)
 
-    assign_bye_button = sg.ButtonMenu(button_text='Assign BYE to', 
+    assign_bye_button = sg.ButtonMenu(button_text='Assign BYE', 
                                       font=(FONT, 14), 
                                       item_font=(FONT, 12), 
-                                      key='-ASSIGN BYE TO-', 
+                                      text_color='white', 
+                                      key='-BUTTONMENU ASSIGN BYE-', 
                                       menu_def=['junk', player_list])
 
     buttons = [sg.Button('Submit Pairing', border_width=2, font=(FONT, 16), key='-SUBMIT CUSTOM PAIRINGS-'), 
@@ -277,25 +281,48 @@ def popupCustomPairings():
         if (event == sg.WIN_CLOSED) or (event == '-CANCEL CUSTOM PAIRINGS-'):
             break
 
-        ###  add player to BYE assignment table
-        if (event == '-ASSIGN BYE TO-'):
+        ###  add player to table assignment
+        if 'BUTTONMENU TABLE' in event:
 
-            ###  removing player from player_list
-            p = values['-ASSIGN BYE TO-']
-            junk = player_list.pop(player_list.index(p))
+            ###  check if there was already a player assigned to this slot
+            ###  and if so re-adding them to player_list
+            current_player = window_custom_pairings[event].ButtonText
+            if current_player != ' ':
+                player_list.append(current_player)
+
+            ###  removing chosen player from player_list
+            p = values[event]
+            if p != ' ':
+                junk = player_list.pop(player_list.index(p))
+
+            ###  assigning chosen player to slot
+            window_custom_pairings[event].update(button_text=p)
+
+            ###  updating buttonmenu options
+            for k in values.keys():
+                if 'BUTTONMENU TABLE' in k:
+                    window_custom_pairings[k].update(menu_definition=['junk', [' ']+player_list])
+                elif 'BUTTONMENU ASSIGN BYE' in k:
+                    window_custom_pairings[k].update(menu_definition=['junk', player_list])
+
+        ###  add player to BYE assignment table
+        if (event == '-BUTTONMENU ASSIGN BYE-'):
+
+            ###  removing chosen player from player_list
+            p = values['-BUTTONMENU ASSIGN BYE-']
+            if p != ' ':
+                junk = player_list.pop(player_list.index(p))
 
             ###  adding to candidate_byes and updating BYE table
             candidate_byes.append(p)
             window_custom_pairings['-TABLE BYE ASSIGNMENT-'].update(values=[['X', ' '*10+cand] for cand in candidate_byes])
 
-            ###  updating dropdown menu options
+            ###  updating buttonmenu options
             for k in values.keys():
-                if 'DROPDOWN' in k:
-                    window_custom_pairings[k].update(values=player_list)
-                elif k == '-ASSIGN BYE TO-':
+                if 'BUTTONMENU TABLE' in k:
+                    window_custom_pairings[k].update(menu_definition=['junk', [' ']+player_list])
+                elif 'BUTTONMENU ASSIGN BYE' in k:
                     window_custom_pairings[k].update(menu_definition=['junk', player_list])
-
-
 
         ###  remove player from BYE assignment table
         if isinstance(event, tuple) and (event[0] == '-TABLE BYE ASSIGNMENT-') and \
@@ -309,12 +336,40 @@ def popupCustomPairings():
             ###  re-adding player to player_list
             player_list.append(p)
 
-            ###  updating dropdown menu options
+            ###  updating buttonmenu options
             for k in values.keys():
-                if 'DROPDOWN' in k:
-                    window_custom_pairings[k].update(values=player_list)
-                elif k == '-ASSIGN BYE TO-':
+                if 'BUTTONMENU' in k:
                     window_custom_pairings[k].update(menu_definition=['junk', player_list])
+
+
+        ###  process submission of custom pairings
+        if (event == '-SUBMIT CUSTOM PAIRINGS-'):
+
+            ###  check that player_list is empty (i.e. all players have an assignment)
+            if len(player_list) != 0:
+
+                message = 'Still need assignments for:\n'
+                for player in player_list:
+                    message += '\n%s' % player.split('   ')[1]
+
+                sg.popup_no_titlebar(message, font=(FONT, 14))
+                continue
+
+
+
+            candidate_pairing = [['', ''] for i in range(n_tables)]
+            for i_table in range(n_tables):
+
+                player1 = window_custom_pairings['-BUTTONMENU TABLE%i PLAYER1-'%(i_table+1)].ButtonText
+                player2 = window_custom_pairings['-BUTTONMENU TABLE%i PLAYER2-'%(i_table+1)].ButtonText
+                #player1 = player1.split('   ')[1]
+                #player2 = player2.split('   ')[1]
+
+                ###  LOGIC TO HANDLE WHEN A TABLE IS EMPTY BECAUSE MULTIPLE PLAYERS ARE ON BYE
+
+                ###  EDGE CASE WHERE ONE SLOT FOR THIS TABLE IS FILLED AND THE OTHER IS EMPTY
+
+
 
 
     window_custom_pairings.close()
@@ -330,7 +385,7 @@ registration_table = sg.Table(values=PARTICIPANTS.get_roster_list(integer_rating
                               headings=['', 'Name', 'Rating'], 
                               size=(900, 250),
                               font=(FONT, 12),
-                              col_widths=[3, 20, 6],
+                              col_widths=[3, 20, 7],
                               auto_size_columns=False,
                               justification='center',
                               key='-REGISTRATION TABLE-',
@@ -588,8 +643,8 @@ while True:
         if confirmation != 'Yes':
             continue
 
-        ###  removing edit pairings and start round buttons from finished round
-        window['-EDIT PAIRINGS %i-' % CURRENT_ROUND].update(visible=False)
+        ###  removing custom pairings and start round buttons from finished round
+        window['-CUSTOM PAIRINGS %i-' % CURRENT_ROUND].update(visible=False)
         window['-START NEXT ROUND %i-' % CURRENT_ROUND].update(visible=False)
 
         ###  logging previous opponent pairings
@@ -785,7 +840,7 @@ while True:
         ###  adding tab for next round
         window['-TABGROUP-'].add_tab(sg.Tab(' Round %i ' % CURRENT_ROUND, 
                                             [[sg.Button('Standings', font=(FONT, 16), key='-GET STANDINGS %i-' % CURRENT_ROUND), 
-                                              sg.Button('Edit Pairings', font=(FONT, 16), key='-EDIT PAIRINGS %i-' % CURRENT_ROUND), 
+                                              sg.Button('Custom Pairings', font=(FONT, 16), key='-CUSTOM PAIRINGS %i-' % CURRENT_ROUND), 
                                               sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND %i-' % CURRENT_ROUND), 
                                               sg.Button('End Tournament', font=(FONT, 16), key='-END TOURNAMENT %i-' % CURRENT_ROUND)], 
                                              [sg.Column(layout=layout_pairings, 
