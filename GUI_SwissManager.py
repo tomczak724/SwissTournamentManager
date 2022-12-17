@@ -153,80 +153,130 @@ def popupStandings():
 
     window_standings.close()
 
-def popupEditPairings():
+def popupCustomPairings():
 
+    ###  grabbing participant info
+    ###  and instantiating custom pairing variables
     nominal_pairings = PARTICIPANTS.opponents[-1]
-
     player_list = ['%.1f   %s' % (score, name) for score, name in zip(PARTICIPANTS.total_scores, PARTICIPANTS.names)]
+    candidate_byes = []
+    candidate_pairing = []
 
 
+    layout_pairings = []
 
-    layout_pairings = [[sg.Button('Submit', border_width=2, font=(FONT, 16), key='-SUBMIT CUSTOM PAIRINGS-'), 
-                        sg.Button('Cancel', border_width=2, font=(FONT, 16), key='-CANCEL CUSTOM PAIRINGS-')]]
+    for idx in range(len(nominal_pairings)//2):
 
-    for idx, idx_opp in enumerate(nominal_pairings):
+        t = sg.Table(values=[], 
+                     headings=['Table %i' % (idx+1)], 
+                     size=(300, 0),
+                     font=(FONT, 12),
+                     pad=0,
+                     select_mode=sg.TABLE_SELECT_MODE_NONE,
+                     col_widths=[25],
+                     hide_vertical_scroll=True,
+                     auto_size_columns=False,
+                     justification='center',
+                     expand_x=False,
+                     expand_y=False)
 
-        if idx == 'BYE':
-            continue
-        elif idx_opp == 'BYE':
-            default_opp = 'BYE'
+        if idx%2 == 0:
+            layout_pairings.append([])
+            layout_pairings.append([])
+            layout_pairings.append([])
+            layout_pairings.append([])
         else:
-            default_opp = PARTICIPANTS.names[idx_opp]
+            layout_pairings[-3].append(sg.Text(' '*20, pad=0, font=(FONT, 12)))
+            layout_pairings[-2].append(sg.Text(' '*20, pad=0, font=(FONT, 12)))
+            layout_pairings[-1].append(sg.Text(' '*20, pad=0, font=(FONT, 12)))
 
-            t = sg.Table(values=[], 
-                         headings=['Table %i' % (idx+1)], 
-                         size=(300, 0),
+
+        layout_pairings[-4].append(sg.Text(' ', pad=0, font=(FONT, 12)))
+        layout_pairings[-3].append(t) 
+        layout_pairings[-2].append(sg.DropDown(values=player_list, 
+                                               pad=0, 
+                                               readonly=True, 
+                                               size=(26, 1), 
+                                               font=(FONT, 12)))
+        layout_pairings[-1].append(sg.DropDown(values=player_list, 
+                                               pad=0, 
+                                               readonly=True, 
+                                               size=(26, 1), 
+                                               font=(FONT, 12)))
+
+
+
+    ###  table for assigning BYES
+    candidate_byes = ['0.0   Adam Tomczak', 
+                      '1.5   Frank DeCat', 
+                      '2.0   Brooke DeCat', 
+                      '1.0   John Smith', 
+                      '0.5   Jane Doe']
+    values = [['X', ' '*10+cand] for cand in candidate_byes]
+    bye_table = sg.Table(values=values, 
+                         headings=['', 'BYE(s)'], 
+                         key='-TABLE BYE ASSIGNMENT-', 
+                         size=(300, 5),
                          font=(FONT, 12),
-                         pad=0,
+                         pad=15,
                          select_mode=sg.TABLE_SELECT_MODE_NONE,
-                         col_widths=[25],
+                         col_widths=[2, 28],
                          hide_vertical_scroll=True,
                          auto_size_columns=False,
-                         justification='center',
+                         enable_events=True,
+                         enable_click_events=True,
+                         justification='left',
                          expand_x=False,
                          expand_y=False)
 
-            if idx%2 == 0:
-                layout_pairings.append([])
-                layout_pairings.append([])
-                layout_pairings.append([])
-                layout_pairings.append([])
-            else:
-                layout_pairings[-3].append(sg.Text(' '*20, pad=0, font=(FONT, 12)))
-                layout_pairings[-2].append(sg.Text(' '*20, pad=0, font=(FONT, 12)))
-                layout_pairings[-1].append(sg.Text(' '*20, pad=0, font=(FONT, 12)))
+    buttons = [sg.Button('Submit Pairing', border_width=2, font=(FONT, 16), key='-SUBMIT CUSTOM PAIRINGS-'), 
+               sg.Button('Cancel', border_width=2, font=(FONT, 16), key='-CANCEL CUSTOM PAIRINGS-')]
 
+    layout_edit_parings = [sg.Column(layout=layout_pairings, 
+                                     size=(650, 590), 
+                                     pad=0, 
+                                     scrollable=True, 
+                                     vertical_scroll_only=True, 
+                                     sbar_width=1, 
+                                     element_justification='center'), 
+                           sg.Column(layout=[[bye_table]])]
 
-            layout_pairings[-4].append(sg.Text(' ', pad=0, font=(FONT, 12)))
-            layout_pairings[-3].append(t) 
-            layout_pairings[-2].append(sg.DropDown(values=player_list, 
-                                                   pad=0, 
-                                                   readonly=True, 
-                                                   size=(26, 1), 
-                                                   font=(FONT, 12)))
-            layout_pairings[-1].append(sg.DropDown(values=player_list, 
-                                                   pad=0, 
-                                                   readonly=True, 
-                                                   size=(26, 1), 
-                                                   font=(FONT, 12)))
-
-
-    window_edit_pairings = sg.Window('Edit Pairings for Round %i' % CURRENT_ROUND, 
-                                     layout_pairings, 
+    window_custom_pairings = sg.Window('Generate Custom Pairings for Round %i' % CURRENT_ROUND, 
+                                     [[buttons], [layout_edit_parings]], 
                                      location=(50, 0), 
-                                     size=(850, 670), 
+                                     size=(1050, 670), 
                                      sbar_arrow_width=1,
-                                     element_justification='left', 
+                                     element_justification='center', 
                                      resizable=True)
 
     while True:
 
-        event, values = window_edit_pairings.read()
+        event, values = window_custom_pairings.read()
+        print('\n')
+        print(time.ctime())
+        print('THE EVENT IS:  ', event)
+        if values is not None:
+            for i, (k, v) in enumerate(values.items()):
+                if i == 0:
+                    print('THE VALUES:    "%s":' % k, v)
+                else:
+                    print('               "%s":' % k, v)
 
-        if event == sg.WIN_CLOSED:
+        if (event == sg.WIN_CLOSED) or (event == '-CANCEL CUSTOM PAIRINGS-'):
             break
 
-    window_edit_pairings.close()
+        if isinstance(event, tuple) and (event[0] == '-TABLE BYE ASSIGNMENT-') and \
+           (event[1] == '+CLICKED+') and (event[2][1] == 0) and (event[2][0] != -1):
+
+            idx_bye = event[2][0]
+            junk = candidate_byes.pop(idx_bye)
+            window_custom_pairings['-TABLE BYE ASSIGNMENT-'].update(values=[['X', ' '*10+cand] for cand in candidate_byes])
+
+            for p in candidate_byes:
+                print('player %s still on BYE' % p.split('   ')[1])
+
+
+    window_custom_pairings.close()
 
 
 
@@ -251,8 +301,6 @@ registration_table = sg.Table(values=PARTICIPANTS.get_roster_list(integer_rating
                               expand_y=False)
 
 
-
-
 registration_layout = [ [ registration_table, 
                           sg.Column(pad=50, 
                                     element_justification='left',
@@ -261,6 +309,7 @@ registration_layout = [ [ registration_table,
                                             [sg.Button('Start Round 1', border_width=2, font=(FONT, 18), key='-START ROUND 1-'), 
                                              sg.Button('Clear Roster', border_width=2, font=(FONT, 18), key='-CLEAR ROSTER-')], 
 
+                                            [sg.Text('', font=(FONT, 14))], 
                                             [sg.Text('', font=(FONT, 14))], 
 
                                             [sg.Text(' Name: ', font=(FONT, 14)), 
@@ -420,7 +469,7 @@ while True:
         CURRENT_ROUND = 1
         window['-TABGROUP-'].add_tab(sg.Tab(' Round 1 ', 
                                             [[sg.Button('Standings', font=(FONT, 16), key='-GET STANDINGS %i-' % CURRENT_ROUND), 
-                                              sg.Button('Edit Pairings', font=(FONT, 16), key='-EDIT PAIRINGS %i-' % CURRENT_ROUND), 
+                                              sg.Button('Custom Pairings', font=(FONT, 16), key='-CUSTOM PAIRINGS %i-' % CURRENT_ROUND), 
                                               sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND %i-' % CURRENT_ROUND), 
                                               sg.Button('End Tournament', font=(FONT, 16), key='-END TOURNAMENT %i-' % CURRENT_ROUND)], 
                                              [sg.Column(layout=layout_pairings, 
@@ -443,8 +492,8 @@ while True:
         popupStandings()
 
     ###  prompt to edit round pairings
-    elif ('EDIT PAIRINGS' in event):
-        popupEditPairings()
+    elif ('CUSTOM PAIRINGS' in event):
+        popupCustomPairings()
 
     ###  prompt to enter scores from games
     elif isinstance(event, tuple) and ('PAIRING R' in event[0]):
