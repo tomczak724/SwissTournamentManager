@@ -213,11 +213,6 @@ def popupCustomPairings():
 
 
     ###  table for assigning BYES
-    #candidate_byes = ['0.0   Adam Tomczak', 
-    #                  '0.0   Frank DeCat', 
-    #                  '0.0   Brooke DeCat', 
-    #                  '0.0   John Smith', 
-    #                  '0.0   Jane Doe']
     values = [['X', ' '*10+cand] for cand in candidate_byes]
     bye_table = sg.Table(values=values, 
                          headings=['', 'BYE(s)'], 
@@ -243,6 +238,8 @@ def popupCustomPairings():
                                       menu_def=['junk', player_list])
 
     buttons = [sg.Button('Submit Pairing', border_width=2, font=(FONT, 16), key='-SUBMIT CUSTOM PAIRINGS-'), 
+               sg.Button('Nominal Pairings', border_width=2, font=(FONT, 16), key='-NOMINAL PAIRINGS-'), 
+               sg.Button('Clear All', border_width=2, font=(FONT, 16), key='-CLEAR ALL PAIRINGS-'), 
                sg.Button('Cancel', border_width=2, font=(FONT, 16), key='-CANCEL CUSTOM PAIRINGS-')]
 
     layout_edit_parings = [sg.Column(layout=layout_pairings, 
@@ -282,7 +279,7 @@ def popupCustomPairings():
             break
 
         ###  add player to table assignment
-        if 'BUTTONMENU TABLE' in event:
+        if ('BUTTONMENU TABLE' in event):
 
             ###  check if there was already a player assigned to this slot
             ###  and if so re-adding them to player_list
@@ -341,6 +338,63 @@ def popupCustomPairings():
                 if 'BUTTONMENU' in k:
                     window_custom_pairings[k].update(menu_definition=['junk', player_list])
 
+        ###  populate slots with the auto-generated pairings
+        if (event == '-NOMINAL PAIRINGS-'):
+
+            confirmation = sg.popup_yes_no('Populate fields with automated pairings?', 
+                                           title='Retrieve Nominal Pairing', 
+                                           font=(FONT, 14))
+
+            if confirmation == 'No':
+                continue
+
+            ###  iterating over nominal table assignments
+            candidate_byes = []
+            for i_table in range(n_tables):
+
+                idx_player1 = i_table
+                idx_player2 = nominal_pairings[idx_player1]
+
+                if idx_player2 == 'BYE':
+                    candidate_byes.append('%.1f   %s' % (PARTICIPANTS.total_scores[idx_player1], PARTICIPANTS.names[idx_player1]))
+                else:
+                    window_custom_pairings['-BUTTONMENU TABLE%i PLAYER1-'%(i_table+1)].update(button_text='%.1f   %s' % (PARTICIPANTS.total_scores[idx_player1], PARTICIPANTS.names[idx_player1]))
+                    window_custom_pairings['-BUTTONMENU TABLE%i PLAYER2-'%(i_table+1)].update(button_text='%.1f   %s' % (PARTICIPANTS.total_scores[idx_player2], PARTICIPANTS.names[idx_player2]))
+
+                ###  updating buttonmenu options
+                window_custom_pairings['-BUTTONMENU TABLE%i PLAYER1-'%(i_table+1)].update(menu_definition=['junk', [' ']])
+                window_custom_pairings['-BUTTONMENU TABLE%i PLAYER2-'%(i_table+1)].update(menu_definition=['junk', [' ']])
+
+
+            ###  populating BYE table
+            window_custom_pairings['-TABLE BYE ASSIGNMENT-'].update(values=[['X', ' '*10+cand] for cand in candidate_byes])
+            window_custom_pairings['-BUTTONMENU ASSIGN BYE-'].update(menu_definition=['junk', []])
+
+            ###  depopulation player_list
+            player_list = []
+
+        ###  clear all current assignments
+        if (event == '-CLEAR ALL PAIRINGS-'):
+
+            confirmation = sg.popup_yes_no('Clear all current assignments?', 
+                                           title='Clear Assignments', 
+                                           font=(FONT, 14))
+
+            if confirmation == 'No':
+                continue
+
+            ###  re-initializing player_list
+            player_list = ['%.1f   %s' % (score, name) for score, name in zip(PARTICIPANTS.total_scores, PARTICIPANTS.names)]
+
+            ###  removing names from buttonmenus and BYE table and updating options
+            for k in values.keys():
+                if 'BUTTONMENU TABLE' in k:
+                    window_custom_pairings[k].update(button_text=' ', menu_definition=['junk', [' ']+player_list])
+                elif 'BUTTONMENU ASSIGN BYE' in k:
+                    window_custom_pairings[k].update(menu_definition=['junk', player_list])
+
+            ###  clearing BYE table
+            window_custom_pairings['-TABLE BYE ASSIGNMENT-'].update(values=[])
 
         ###  process submission of custom pairings
         if (event == '-SUBMIT CUSTOM PAIRINGS-'):
@@ -348,28 +402,86 @@ def popupCustomPairings():
             ###  check that player_list is empty (i.e. all players have an assignment)
             if len(player_list) != 0:
 
-                message = 'Still need assignments for:\n'
+                message = 'Still need assignment(s) for:\n'
                 for player in player_list:
                     message += '\n%s' % player.split('   ')[1]
 
                 sg.popup_no_titlebar(message, font=(FONT, 14))
                 continue
 
-
-
-            candidate_pairing = [['', ''] for i in range(n_tables)]
+            ###  recording pairings of players
+            candidate_opponents = [None for i in range(PARTICIPANTS.n_participants)]
+            candidate_pairings = []
             for i_table in range(n_tables):
 
+                ###  extracting player names from buttonmenus
                 player1 = window_custom_pairings['-BUTTONMENU TABLE%i PLAYER1-'%(i_table+1)].ButtonText
                 player2 = window_custom_pairings['-BUTTONMENU TABLE%i PLAYER2-'%(i_table+1)].ButtonText
-                #player1 = player1.split('   ')[1]
-                #player2 = player2.split('   ')[1]
 
-                ###  LOGIC TO HANDLE WHEN A TABLE IS EMPTY BECAUSE MULTIPLE PLAYERS ARE ON BYE
+                ###  skip if table is completely empty (probably because muliple players are on BYE)
+                if (player1 == ' ') and (player2 == ' '):
+                    continue
 
-                ###  EDGE CASE WHERE ONE SLOT FOR THIS TABLE IS FILLED AND THE OTHER IS EMPTY
+                ###  if one slot is empty but the other is filled place the indeicated player on BYE
+                if (player2 == ' '):
+                    player = player1.split('   ')[1]
+                    idx_player = PARTICIPANTS.names.index(player)
+                    candidate_opponents[idx_player] = 'BYE'
+                    candidate_pairings.append('%ivBYE'%idx_player)
+
+                elif (player1 == ' '):
+                    player = player2.split('   ')[1]
+                    idx_player = PARTICIPANTS.names.index(player)
+                    candidate_opponents[idx_player] = 'BYE'
+                    candidate_pairings.append('%ivBYE'%idx_player)
+
+                ###  otherwise, both slots were filled
+                else:
+                    player1 = player1.split('   ')[1]
+                    player2 = player2.split('   ')[1]
+                    idx_player1 = PARTICIPANTS.names.index(player1)
+                    idx_player2 = PARTICIPANTS.names.index(player2)
+                    candidate_opponents[idx_player1] = idx_player2
+                    candidate_opponents[idx_player2] = idx_player1
+                    candidate_pairings.append('%iv%i'%(idx_player1, idx_player2))
+                    candidate_pairings.append('%iv%i'%(idx_player2, idx_player1))
+
+            ###  recording BYE assignments
+            for player in candidate_byes:
+                player = player.split('   ')[1]
+                idx_player = PARTICIPANTS.names.index(player)
+                candidate_opponents[idx_player] = 'BYE'
+                candidate_pairings.append('%ivBYE'%idx_player)
+
+            ###  check if any given pairs occurred in a past round and warn user
+            overlap = set(candidate_pairings).intersection(PARTICIPANTS.all_prev_pairings)
+            if len(overlap) > 0:
+
+                message = 'WARNING\nThe following pairing(s) occurred in a previous round:\n'
+                for pair in overlap:
+
+                    opp1, opp2 = pair.split('v')
+                    if opp1 == 'BYE':
+                        message += '\n%s given BYE' % PARTICIPANTS.names[int(opp2)]
+                    elif opp2 == 'BYE':
+                        message += '\n%s given BYE' % PARTICIPANTS.names[int(opp1)]
+                    else:
+                        message += '\n%s vs. %s' % (PARTICIPANTS.names[int(opp1)], PARTICIPANTS.names[int(opp2)])
+
+                message += '\n\nSubmit pairings anyway?'
+
+            else:
+                message = 'Ready to submit pairings?'
 
 
+            confirmation = sg.popup_yes_no(message, 
+                                           title='Submit Pairings', 
+                                           font=(FONT, 14))
+
+            ###  ready to return submitted pairings
+            if confirmation == 'Yes':
+                window_custom_pairings.close()
+                return candidate_opponents
 
 
     window_custom_pairings.close()
@@ -589,7 +701,9 @@ while True:
 
     ###  prompt to edit round pairings
     elif ('CUSTOM PAIRINGS' in event):
-        popupCustomPairings()
+        custom_opponents = popupCustomPairings()
+
+
 
     ###  prompt to enter scores from games
     elif isinstance(event, tuple) and ('PAIRING R' in event[0]):
