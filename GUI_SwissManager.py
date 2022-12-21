@@ -60,18 +60,31 @@ def popupEditPlayer(current_name, current_rating):
 
 def popupEnterScores(name1, name2):
 
-    default_text1, default_text2 = '', ''
+    default_text1, disabled1 = '', False
+    default_text2, disabled2 = '', False
     if name1 == 'BYE':
-        default_text1 = '0'
+        default_text1, disabled1 = '0', True
     if name2 == 'BYE':
-        default_text2 = '0'
+        default_text2, disabled2 = '0', True
 
     popup = sg.Window('Enter Scores', 
                       layout=[
                               [sg.Column(layout=[[sg.Text(name1, font=(FONT, 14))], 
                                                  [sg.Text(name2, font=(FONT, 14))]]), 
-                               sg.Column(layout=[[sg.InputText(size=(4, 3), border_width=2, default_text=default_text1, font=(FONT, 14), justification='center', key='-SUBMIT SCORE PLAYER 1-')], 
-                                                 [sg.InputText(size=(4, 3), border_width=2, default_text=default_text2, font=(FONT, 14), justification='center', key='-SUBMIT SCORE PLAYER 2-')]])], 
+                               sg.Column(layout=[[sg.InputText(size=(4, 3), 
+                                                               border_width=2, 
+                                                               default_text=default_text1, 
+                                                               disabled=disabled1, 
+                                                               font=(FONT, 14), 
+                                                               justification='center', 
+                                                               key='-SUBMIT SCORE PLAYER 1-')], 
+                                                 [sg.InputText(size=(4, 3), 
+                                                               border_width=2, 
+                                                               default_text=default_text2, 
+                                                               disabled=disabled2, 
+                                                               font=(FONT, 14), 
+                                                               justification='center', 
+                                                               key='-SUBMIT SCORE PLAYER 2-')]])], 
                               [sg.Button('Submit', font=(FONT, 14), key='-SUBMIT-'), 
                                sg.Button('Cancel', font=(FONT, 14), key='-CANCEL-')]
                              ]
@@ -694,6 +707,7 @@ while True:
         ###  hiding registration tab
         window['-TAB REGISTRATION-'].update(visible=False)
         window['-TAB ROUND 1-'].select()
+        ACTIVE_ROUND = 'ROUND 1'
 
     ###  show standings table
     elif ('GET STANDINGS' in event):
@@ -701,7 +715,15 @@ while True:
 
     ###  prompt to edit round pairings
     elif ('CUSTOM PAIRINGS' in event):
+
         custom_opponents = popupCustomPairings()
+
+        ###  skip if no custom pairings returned
+        if custom_opponents is None:
+            continue
+
+
+
 
 
 
@@ -910,8 +932,6 @@ while True:
 
 
 
-
-
         ###  adding valid candidate pairing to PARTICIPANTS
         PARTICIPANTS.opponents.append(candidate_pairing)
 
@@ -919,15 +939,27 @@ while True:
         ###  generating layout for pairings
         layout_pairings = []
 
-        for i_pair, p1 in enumerate(candidate_pairing[:PARTICIPANTS.n_participants//2]):
+        str_pairings = []
+        for i_pair, p1 in enumerate(candidate_pairing):
 
+            ###  extract opponent names for table info
             p0 = candidate_pairing[p1]
             if (p0 == 'BYE'):
                 vals = [[p1+1, PARTICIPANTS.names[p1], ''], ['', p0, '']]
+                str1_pair = '%ivBYE' % p1
+                str2_pair = 'BYEv%i' % p1
             elif (p1 == 'BYE'):
                 vals = [[p0+1, PARTICIPANTS.names[p0], ''], ['', p1, '']]
+                str1_pair = '%ivBYE' % p0
+                str2_pair = 'BYEv%i' % p0
             else:
                 vals = [[p0+1, PARTICIPANTS.names[p0], ''], [p1+1, PARTICIPANTS.names[p1], '']]
+                str1_pair = '%iv%i' % (p0, p1)
+                str2_pair = '%iv%i' % (p1, p0)
+
+            ###  skip if this pair is already accounted for
+            if (str1_pair in str_pairings) or (str2_pair in str_pairings):
+                continue
 
             t = sg.Table(values=vals, 
                          headings=['', 'Table %i' % (i_pair+1), 'Score'], 
@@ -949,6 +981,9 @@ while True:
                 layout_pairings.append([])
 
             layout_pairings[-1].append(t)
+            str_pairings.append(str1_pair)
+            str_pairings.append(str2_pair)
+
 
 
         ###  adding tab for next round
@@ -970,8 +1005,9 @@ while True:
 
 
 
-        ###  hiding registration tab
+        ###  selecting current round tab
         window['-TAB ROUND %i-' % CURRENT_ROUND].select()
+        ACTIVE_ROUND = 'ROUND %i' % CURRENT_ROUND
 
 
 
