@@ -9,6 +9,7 @@ from ParticipantRoster import ParticipantRoster
 sg.theme('DarkGrey15')
 FONT = 'bitstream charter'
 CURRENT_ROUND = 0
+ROUND_RESET_COUNTER = 0   # for keeping track of number of times a new round tab is created from customized pairings
 
 PARTICIPANTS = ParticipantRoster()
 
@@ -452,8 +453,8 @@ def popupCustomPairings():
                 else:
                     player1 = player1.split('   ')[1]
                     player2 = player2.split('   ')[1]
-                    idx_player1 = PARTICIPANTS.names.index(player1)
-                    idx_player2 = PARTICIPANTS.names.index(player2)
+                    idx_player1 = PARTICIPANTS.names.tolist().index(player1)
+                    idx_player2 = PARTICIPANTS.names.tolist().index(player2)
                     candidate_opponents[idx_player1] = idx_player2
                     candidate_opponents[idx_player2] = idx_player1
                     candidate_pairings.append('%iv%i'%(idx_player1, idx_player2))
@@ -689,10 +690,10 @@ while True:
         ###  adding round 1 tab
         CURRENT_ROUND = 1
         window['-TABGROUP-'].add_tab(sg.Tab(' Round 1 ', 
-                                            [[sg.Button('Standings', font=(FONT, 16), key='-GET STANDINGS %i-' % CURRENT_ROUND), 
-                                              sg.Button('Custom Pairings', font=(FONT, 16), key='-CUSTOM PAIRINGS %i-' % CURRENT_ROUND), 
-                                              sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND %i-' % CURRENT_ROUND), 
-                                              sg.Button('End Tournament', font=(FONT, 16), key='-END TOURNAMENT %i-' % CURRENT_ROUND)], 
+                                            [[sg.Button('Standings', font=(FONT, 16), key='-GET STANDINGS %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)), 
+                                              sg.Button('Custom Pairings', font=(FONT, 16), key='-CUSTOM PAIRINGS %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)), 
+                                              sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)), 
+                                              sg.Button('End Tournament', font=(FONT, 16), key='-END TOURNAMENT %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER))], 
                                              [sg.Column(layout=layout_pairings, 
                                                         size=(800, 400), 
                                                         scrollable=True, 
@@ -701,13 +702,12 @@ while True:
                                                         sbar_arrow_width=1, 
                                                         element_justification='center', 
                                                         expand_y=True)]], 
-                                            key='-TAB ROUND 1-', 
+                                            key='-TAB ROUND 1_%i-' % ROUND_RESET_COUNTER, 
                                             element_justification='center'))
 
         ###  hiding registration tab
         window['-TAB REGISTRATION-'].update(visible=False)
-        window['-TAB ROUND 1-'].select()
-        ACTIVE_ROUND = 'ROUND 1'
+        window['-TAB ROUND 1_%i-' % ROUND_RESET_COUNTER].select()
 
     ###  show standings table
     elif ('GET STANDINGS' in event):
@@ -723,9 +723,79 @@ while True:
             continue
 
 
+        ###  updating the last pairing in PARTICIPANTS
+        PARTICIPANTS.opponents[-1] = custom_opponents
+
+        ###  generating layout for pairings
+        layout_pairings = []
+
+        i_table = 0
+        str_pairings = []
+        for idx_player1, idx_player2 in enumerate(custom_opponents):
+
+            ###  extract opponent names for table info
+            if idx_player2 == 'BYE':
+                vals = [[idx_player1+1, PARTICIPANTS.names[idx_player1], ''], ['', 'BYE', '']]
+                str1_pair = '%ivBYE' % PARTICIPANTS.names[idx_player1]
+                str2_pair = 'BYEv%i' % PARTICIPANTS.names[idx_player1]
+            else:
+                vals = [[idx_player1+1, PARTICIPANTS.names[idx_player1], ''], [idx_player2+1, PARTICIPANTS.names[idx_player2], '']]
+                str1_pair = '%iv%i' % (PARTICIPANTS.names[idx_player1], PARTICIPANTS.names[idx_player2])
+                str2_pair = '%iv%i' % (PARTICIPANTS.names[idx_player2], PARTICIPANTS.names[idx_player1])
+
+
+            ###  skip if this pair is already accounted for
+            if (str1_pair in str_pairings) or (str2_pair in str_pairings):
+                continue
+
+            i_table += 1
+            t = sg.Table(values=vals, 
+                         headings=['', 'Table %i' % i_table, 'Score'], 
+                         size=(300, 2),
+                         font=(FONT, 12),
+                         pad=10,
+                         select_mode=sg.TABLE_SELECT_MODE_NONE,
+                         col_widths=[3, 20, 6],
+                         hide_vertical_scroll=True,
+                         auto_size_columns=False,
+                         justification='center',
+                         key='-PAIRING R%iT%i-' % (CURRENT_ROUND, i_table),
+                         enable_events=True,
+                         enable_click_events=True,
+                         expand_x=False,
+                         expand_y=False)
+
+            if i_table%2 == 1:
+                layout_pairings.append([])
+
+            layout_pairings[-1].append(t)
+            str_pairings.append(str1_pair)
+            str_pairings.append(str2_pair)
+
+
+        ###  creating new tab for current round
+        ROUND_RESET_COUNTER += 1
+        window['-TABGROUP-'].add_tab(sg.Tab(' Round %i ' % CURRENT_ROUND, 
+                                            [[sg.Button('Standings', font=(FONT, 16), key='-GET STANDINGS %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)), 
+                                              sg.Button('Custom Pairings', font=(FONT, 16), key='-CUSTOM PAIRINGS %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)), 
+                                              sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)), 
+                                              sg.Button('End Tournament', font=(FONT, 16), key='-END TOURNAMENT %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER))], 
+                                             [sg.Column(layout=layout_pairings, 
+                                                        size=(800, 400), 
+                                                        scrollable=True, 
+                                                        vertical_scroll_only=True, 
+                                                        sbar_width=1, 
+                                                        sbar_arrow_width=1, 
+                                                        element_justification='center', 
+                                                        expand_y=True)]], 
+                                            key='-TAB ROUND %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER), 
+                                            element_justification='center'))
 
 
 
+        ###  removing and replacing previous round tab
+        window['-TAB ROUND %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER-1)].update(visible=False)
+        window['-TAB ROUND %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)].select()
 
     ###  prompt to enter scores from games
     elif isinstance(event, tuple) and ('PAIRING R' in event[0]):
@@ -760,7 +830,7 @@ while True:
                 PARTICIPANTS.current_round_scores[idx2-1] = score2
 
     ###  start next round
-    elif (event == '-START NEXT ROUND %i-' % CURRENT_ROUND):
+    elif ('START NEXT ROUND' in event):
 
         ###  confirm that all scores have been entered
         if numpy.isnan(PARTICIPANTS.current_round_scores).any():
@@ -780,8 +850,8 @@ while True:
             continue
 
         ###  removing custom pairings and start round buttons from finished round
-        window['-CUSTOM PAIRINGS %i-' % CURRENT_ROUND].update(visible=False)
-        window['-START NEXT ROUND %i-' % CURRENT_ROUND].update(visible=False)
+        window['-CUSTOM PAIRINGS %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)].update(visible=False)
+        window['-START NEXT ROUND %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)].update(visible=False)
 
         ###  logging previous opponent pairings
         PARTICIPANTS.all_prev_pairings += ['%sv%s' % (p0, p1) for (p0, p1) in pairings]
@@ -791,6 +861,9 @@ while True:
         PARTICIPANTS.total_scores += PARTICIPANTS.current_round_scores
         PARTICIPANTS.all_round_scores.append(PARTICIPANTS.current_round_scores.tolist())
         PARTICIPANTS.current_round_scores = numpy.array([numpy.nan]*PARTICIPANTS.n_participants)
+
+        ###  updating round counters
+        ROUND_RESET_COUNTER = 0
         CURRENT_ROUND += 1
 
 
@@ -816,7 +889,6 @@ while True:
 
         ###  iterating over score groups
         for i_score_group, score_group in enumerate(score_groups):
-
 
             ###  generating subgroups s1, s1 (top half, bottom half)
             max_pairs = len(score_group) // 2
@@ -939,6 +1011,7 @@ while True:
         ###  generating layout for pairings
         layout_pairings = []
 
+        i_table = 0
         str_pairings = []
         for i_pair, p1 in enumerate(candidate_pairing):
 
@@ -961,8 +1034,9 @@ while True:
             if (str1_pair in str_pairings) or (str2_pair in str_pairings):
                 continue
 
+            i_table += 1
             t = sg.Table(values=vals, 
-                         headings=['', 'Table %i' % (i_pair+1), 'Score'], 
+                         headings=['', 'Table %i' % i_table, 'Score'], 
                          size=(300, 2),
                          font=(FONT, 12),
                          pad=10,
@@ -977,7 +1051,7 @@ while True:
                          expand_x=False,
                          expand_y=False)
 
-            if i_pair%2 == 0:
+            if i_table%2 == 1:
                 layout_pairings.append([])
 
             layout_pairings[-1].append(t)
@@ -988,10 +1062,10 @@ while True:
 
         ###  adding tab for next round
         window['-TABGROUP-'].add_tab(sg.Tab(' Round %i ' % CURRENT_ROUND, 
-                                            [[sg.Button('Standings', font=(FONT, 16), key='-GET STANDINGS %i-' % CURRENT_ROUND), 
-                                              sg.Button('Custom Pairings', font=(FONT, 16), key='-CUSTOM PAIRINGS %i-' % CURRENT_ROUND), 
-                                              sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND %i-' % CURRENT_ROUND), 
-                                              sg.Button('End Tournament', font=(FONT, 16), key='-END TOURNAMENT %i-' % CURRENT_ROUND)], 
+                                            [[sg.Button('Standings', font=(FONT, 16), key='-GET STANDINGS %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)), 
+                                              sg.Button('Custom Pairings', font=(FONT, 16), key='-CUSTOM PAIRINGS %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)), 
+                                              sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)), 
+                                              sg.Button('End Tournament', font=(FONT, 16), key='-END TOURNAMENT %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER))], 
                                              [sg.Column(layout=layout_pairings, 
                                                         size=(800, 400), 
                                                         scrollable=True, 
@@ -1000,14 +1074,13 @@ while True:
                                                         sbar_arrow_width=1, 
                                                         element_justification='center', 
                                                         expand_y=True)]], 
-                                            key='-TAB ROUND %i-' % CURRENT_ROUND, 
+                                            key='-TAB ROUND %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER), 
                                             element_justification='center'))
 
 
 
         ###  selecting current round tab
-        window['-TAB ROUND %i-' % CURRENT_ROUND].select()
-        ACTIVE_ROUND = 'ROUND %i' % CURRENT_ROUND
+        window['-TAB ROUND %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)].select()
 
 
 
