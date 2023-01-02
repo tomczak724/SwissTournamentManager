@@ -1093,6 +1093,30 @@ while True:
             continue
 
 
+        ###  file name to store tournament results
+        ctime = time.localtime()
+        fname_results = 'TOURNAMENT_RESULTS__'
+        fname_results += '%4i-%02i-%02i.csv' % (ctime.tm_year, ctime.tm_mon, ctime.tm_mday)
+
+        with open(fname_results, 'w') as fopen:
+
+            ###  writing column names
+            fopen.write('seed,name,rating')
+            for i_round in range(len(PARTICIPANTS.all_round_scores)):
+                fopen.write(',opponent_seed_%i,score_%i' % (i_round+1, i_round+1))
+            fopen.write(',total\n')
+
+            ###  writing a row for each participant
+            for i_player in numpy.argsort(PARTICIPANTS.total_scores)[::-1]:
+
+                fopen.write('%i,' % (PARTICIPANTS.idx[i_player]+1))
+                fopen.write('%s,' % PARTICIPANTS.names[i_player])
+                fopen.write('%i' % PARTICIPANTS.ratings[i_player])
+
+                for i_round in range(len(PARTICIPANTS.all_round_scores)):
+                    fopen.write(',%i,%.2f' % (PARTICIPANTS.opponents[i_round][i_player], PARTICIPANTS.all_round_scores[i_round][i_player]+1))
+
+                fopen.write(',%.2f\n' % PARTICIPANTS.total_scores[i_player])
 
 
 
