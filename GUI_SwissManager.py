@@ -692,8 +692,7 @@ while True:
         window['-TABGROUP-'].add_tab(sg.Tab(' Round 1 ', 
                                             [[sg.Button('Standings', font=(FONT, 16), key='-GET STANDINGS %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)), 
                                               sg.Button('Custom Pairings', font=(FONT, 16), key='-CUSTOM PAIRINGS %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)), 
-                                              sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)), 
-                                              sg.Button('End Tournament', font=(FONT, 16), key='-END TOURNAMENT %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER))], 
+                                              sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER))], 
                                              [sg.Column(layout=layout_pairings, 
                                                         size=(800, 400), 
                                                         scrollable=True, 
@@ -1081,6 +1080,19 @@ while True:
 
         ###  selecting current round tab
         window['-TAB ROUND %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)].select()
+
+    ###  end tournament
+    elif ('END TOURNAMENT' in event):
+
+        ###  confirm that user actually wants to end the tournament
+        confirmation = sg.popup_yes_no('Are you sure you want to\nend the tournament ?', 
+                                       title='End Tournament ?', 
+                                       font=(FONT, 18))
+
+        if confirmation != 'Yes':
+            continue
+
+
 
 
 
