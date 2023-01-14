@@ -885,7 +885,7 @@ while True:
         score_groups = [PARTICIPANTS.idx[PARTICIPANTS.total_scores==s].tolist() for s in scores]
 
         ###  empty array to hold candidate pairing
-        candidate_pairing = -numpy.ones(PARTICIPANTS.n_participants, dtype=int)
+        candidate_pairing = (-numpy.ones(PARTICIPANTS.n_participants, dtype=int)).tolist()
 
         ###  iterating over score groups
         for i_score_group, score_group in enumerate(score_groups):
@@ -994,15 +994,6 @@ while True:
                         score_groups[i_score_group+1] = [idx_downfloater] + score_groups[i_score_group+1]
 
 
-        print('\nCANDIDATE PAIRING')
-        str1, str2 = '', ''
-        for idx, idx_opp in enumerate(candidate_pairing):
-            str1 += '%3i ' % idx
-            str2 += '%3i ' % idx_opp
-        print(str1)
-        print(str2)
-
-
 
         ###  adding valid candidate pairing to PARTICIPANTS
         PARTICIPANTS.opponents.append(candidate_pairing)
@@ -1013,24 +1004,17 @@ while True:
 
         i_table = 0
         str_pairings = []
-        for i_pair, p1 in enumerate(candidate_pairing):
+        for idx_player1, idx_player2 in enumerate(candidate_pairing):
 
             ###  extract opponent names for table info
-            p0 = candidate_pairing[p1]
-            if (p0 == 'BYE'):
-                vals = [[p1+1, PARTICIPANTS.names[p1], ''], ['', p0, '']]
-                str1_pair = '%ivBYE' % p1
-                str2_pair = 'BYEv%i' % p1
-            elif (p1 == 'BYE'):
-                vals = [[p0+1, PARTICIPANTS.names[p0], ''], ['', p1, '']]
-                str1_pair = '%ivBYE' % p0
-                str2_pair = 'BYEv%i' % p0
+            if (idx_player2 == 'BYE'):
+                vals = [[idx_player1+1, PARTICIPANTS.names[idx_player1], ''], ['', 'BYE', '']]
             else:
-                vals = [[p0+1, PARTICIPANTS.names[p0], ''], [p1+1, PARTICIPANTS.names[p1], '']]
-                str1_pair = '%iv%i' % (p0, p1)
-                str2_pair = '%iv%i' % (p1, p0)
+                vals = [[idx_player1+1, PARTICIPANTS.names[idx_player1], ''], [idx_player2+1, PARTICIPANTS.names[idx_player2], '']]
 
             ###  skip if this pair is already accounted for
+            str1_pair = '%sv%s' % (idx_player1, idx_player2)
+            str2_pair = '%sv%s' % (idx_player2, idx_player1)
             if (str1_pair in str_pairings) or (str2_pair in str_pairings):
                 continue
 
