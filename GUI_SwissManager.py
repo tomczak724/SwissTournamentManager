@@ -436,16 +436,16 @@ def popupCustomPairings():
                 if (player1 == ' ') and (player2 == ' '):
                     continue
 
-                ###  if one slot is empty but the other is filled place the indeicated player on BYE
+                ###  if one slot is empty but the other is filled place the indicated player on BYE
                 if (player2 == ' '):
                     player = player1.split('   ')[1]
-                    idx_player = PARTICIPANTS.names.index(player)
+                    idx_player = PARTICIPANTS.names.tolist().index(player)
                     candidate_opponents[idx_player] = 'BYE'
                     candidate_pairings.append('%ivBYE'%idx_player)
 
                 elif (player1 == ' '):
                     player = player2.split('   ')[1]
-                    idx_player = PARTICIPANTS.names.index(player)
+                    idx_player = PARTICIPANTS.names.tolist().index(player)
                     candidate_opponents[idx_player] = 'BYE'
                     candidate_pairings.append('%ivBYE'%idx_player)
 
@@ -463,7 +463,7 @@ def popupCustomPairings():
             ###  recording BYE assignments
             for player in candidate_byes:
                 player = player.split('   ')[1]
-                idx_player = PARTICIPANTS.names.index(player)
+                idx_player = PARTICIPANTS.names.tolist().index(player)
                 candidate_opponents[idx_player] = 'BYE'
                 candidate_pairings.append('%ivBYE'%idx_player)
 
@@ -735,12 +735,12 @@ while True:
             ###  extract opponent names for table info
             if idx_player2 == 'BYE':
                 vals = [[idx_player1+1, PARTICIPANTS.names[idx_player1], ''], ['', 'BYE', '']]
-                str1_pair = '%ivBYE' % PARTICIPANTS.names[idx_player1]
-                str2_pair = 'BYEv%i' % PARTICIPANTS.names[idx_player1]
+                str1_pair = '%ivBYE' % idx_player1
+                str2_pair = 'BYEv%i' % idx_player1
             else:
                 vals = [[idx_player1+1, PARTICIPANTS.names[idx_player1], ''], [idx_player2+1, PARTICIPANTS.names[idx_player2], '']]
-                str1_pair = '%iv%i' % (PARTICIPANTS.names[idx_player1], PARTICIPANTS.names[idx_player2])
-                str2_pair = '%iv%i' % (PARTICIPANTS.names[idx_player2], PARTICIPANTS.names[idx_player1])
+                str1_pair = '%iv%i' % (idx_player1, idx_player2)
+                str2_pair = '%iv%i' % (idx_player2, idx_player1)
 
 
             ###  skip if this pair is already accounted for
@@ -802,7 +802,7 @@ while True:
         ###  parsing round and table numbers
         idx_round, idx_table = event[0].split('PAIRING ')[1].split('T')
         idx_round = int(idx_round.strip('R'))
-        idx_table = int(idx_table.strip('-'))
+        idx_table = int(idx_table.split('-')[0])
 
         ###  only continue if on round = CURRENT_ROUND
         if idx_round != CURRENT_ROUND:
@@ -853,8 +853,9 @@ while True:
         window['-START NEXT ROUND %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)].update(visible=False)
 
         ###  logging previous opponent pairings
-        PARTICIPANTS.all_prev_pairings += ['%sv%s' % (p0, p1) for (p0, p1) in pairings]
-        PARTICIPANTS.all_prev_pairings += ['%sv%s' % (p1, p0) for (p0, p1) in pairings]
+        for p0, p1 in enumerate(PARTICIPANTS.opponents[CURRENT_ROUND-1]):
+            PARTICIPANTS.all_prev_pairings.append('%sv%s' % (p0, p1))
+            PARTICIPANTS.all_prev_pairings.append('%sv%s' % (p1, p0))
 
         ###  logging scores from finished round and prepping for next
         PARTICIPANTS.total_scores += PARTICIPANTS.current_round_scores
@@ -1103,7 +1104,7 @@ while True:
             ###  writing column names
             fopen.write('seed,name,rating')
             for i_round in range(len(PARTICIPANTS.all_round_scores)):
-                fopen.write(',opponent_seed_%i,score_%i' % (i_round+1, i_round+1))
+                fopen.write(',opponent_%i,score_%i' % (i_round+1, i_round+1))
             fopen.write(',total\n')
 
             ###  writing a row for each participant
@@ -1114,7 +1115,11 @@ while True:
                 fopen.write('%i' % PARTICIPANTS.ratings[i_player])
 
                 for i_round in range(len(PARTICIPANTS.all_round_scores)):
-                    fopen.write(',%i,%.2f' % (PARTICIPANTS.opponents[i_round][i_player], PARTICIPANTS.all_round_scores[i_round][i_player]+1))
+                    if PARTICIPANTS.opponents[i_round][i_player] == 'BYE':
+                        opp = 'BYE'
+                    else:
+                        opp = PARTICIPANTS.opponents[i_round][i_player] + 1
+                    fopen.write(',%s,%.2f' % (opp, PARTICIPANTS.all_round_scores[i_round][i_player]))
 
                 fopen.write(',%.2f\n' % PARTICIPANTS.total_scores[i_player])
 
