@@ -13,7 +13,7 @@ ROUND_RESET_COUNTER = 0   # for keeping track of number of times a new round tab
 
 PARTICIPANTS = ParticipantRoster()
 
-file_participants = 'registrant_list.csv'
+file_participants = 'participants.csv'
 if os.path.exists(file_participants):
     with open(file_participants, 'r') as fopen:
         for line in fopen.readlines():
@@ -1117,6 +1117,12 @@ while True:
                     fopen.write(',%i,%.2f' % (PARTICIPANTS.opponents[i_round][i_player], PARTICIPANTS.all_round_scores[i_round][i_player]+1))
 
                 fopen.write(',%.2f\n' % PARTICIPANTS.total_scores[i_player])
+
+
+            ###  closing main window and opening standings window
+            window.close()
+            popupStandings()
+
 
 
 
