@@ -500,6 +500,37 @@ def popupCustomPairings():
 
     window_custom_pairings.close()
 
+def save_tournament_results_csv():
+
+    ###  file name to store tournament results
+    ctime = time.localtime()
+    fname_results = 'TOURNAMENT_RESULTS__'
+    fname_results += '%4i-%02i-%02i.csv' % (ctime.tm_year, ctime.tm_mon, ctime.tm_mday)
+
+    with open(fname_results, 'w') as fopen:
+
+        ###  writing column names
+        fopen.write('seed,name,rating')
+        for i_round in range(len(PARTICIPANTS.all_round_scores)):
+            fopen.write(',opponent_%i,score_%i' % (i_round+1, i_round+1))
+        fopen.write(',total\n')
+
+        ###  writing a row for each participant
+        for i_player in numpy.argsort(PARTICIPANTS.total_scores)[::-1]:
+
+            fopen.write('%i,' % (PARTICIPANTS.idx[i_player]+1))
+            fopen.write('%s,' % PARTICIPANTS.names[i_player])
+            fopen.write('%i' % PARTICIPANTS.ratings[i_player])
+
+            for i_round in range(len(PARTICIPANTS.all_round_scores)):
+                if PARTICIPANTS.opponents[i_round][i_player] == 'BYE':
+                    opp = 'BYE'
+                else:
+                    opp = PARTICIPANTS.opponents[i_round][i_player] + 1
+                fopen.write(',%s,%.2f' % (opp, PARTICIPANTS.all_round_scores[i_round][i_player]))
+
+            fopen.write(',%.2f\n' % PARTICIPANTS.total_scores[i_player])
+
 
 
 
@@ -862,6 +893,9 @@ while True:
         PARTICIPANTS.all_round_scores.append(PARTICIPANTS.current_round_scores.tolist())
         PARTICIPANTS.current_round_scores = numpy.array([numpy.nan]*PARTICIPANTS.n_participants)
 
+        ###  saving tournament results to csv
+        save_tournament_results_csv()
+
         ###  updating round counters
         ROUND_RESET_COUNTER = 0
         CURRENT_ROUND += 1
@@ -1069,6 +1103,15 @@ while True:
     ###  end tournament
     elif ('END TOURNAMENT' in event):
 
+        ###  confirm that all scores have been entered
+        if numpy.isnan(PARTICIPANTS.current_round_scores).any():
+            sg.popup_no_titlebar('Round not finished', 
+                                 font=(FONT, 16), 
+                                 auto_close=True, 
+                                 auto_close_duration=3)
+            continue
+
+
         ###  confirm that user actually wants to end the tournament
         confirmation = sg.popup_yes_no('Are you sure you want to\nend the tournament ?', 
                                        title='End Tournament ?', 
@@ -1078,39 +1121,17 @@ while True:
             continue
 
 
-        ###  file name to store tournament results
-        ctime = time.localtime()
-        fname_results = 'TOURNAMENT_RESULTS__'
-        fname_results += '%4i-%02i-%02i.csv' % (ctime.tm_year, ctime.tm_mon, ctime.tm_mday)
+        ###  logging scores from finished round and prepping for next
+        PARTICIPANTS.total_scores += PARTICIPANTS.current_round_scores
+        PARTICIPANTS.all_round_scores.append(PARTICIPANTS.current_round_scores.tolist())
+        PARTICIPANTS.current_round_scores = numpy.array([numpy.nan]*PARTICIPANTS.n_participants)
 
-        with open(fname_results, 'w') as fopen:
+        ###  saving tournament results to csv
+        save_tournament_results_csv()
 
-            ###  writing column names
-            fopen.write('seed,name,rating')
-            for i_round in range(len(PARTICIPANTS.all_round_scores)):
-                fopen.write(',opponent_%i,score_%i' % (i_round+1, i_round+1))
-            fopen.write(',total\n')
-
-            ###  writing a row for each participant
-            for i_player in numpy.argsort(PARTICIPANTS.total_scores)[::-1]:
-
-                fopen.write('%i,' % (PARTICIPANTS.idx[i_player]+1))
-                fopen.write('%s,' % PARTICIPANTS.names[i_player])
-                fopen.write('%i' % PARTICIPANTS.ratings[i_player])
-
-                for i_round in range(len(PARTICIPANTS.all_round_scores)):
-                    if PARTICIPANTS.opponents[i_round][i_player] == 'BYE':
-                        opp = 'BYE'
-                    else:
-                        opp = PARTICIPANTS.opponents[i_round][i_player] + 1
-                    fopen.write(',%s,%.2f' % (opp, PARTICIPANTS.all_round_scores[i_round][i_player]))
-
-                fopen.write(',%.2f\n' % PARTICIPANTS.total_scores[i_player])
-
-
-            ###  closing main window and opening standings window
-            window.close()
-            popupStandings()
+        ###  closing main window and opening standings window
+        window.close()
+        popupStandings()
 
 
 
