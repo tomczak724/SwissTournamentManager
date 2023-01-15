@@ -128,15 +128,17 @@ def popupStandings():
             table_values[idx] += [PARTICIPANTS.all_round_scores[i_round][idx]]
 
         if idx == 0:
-            table_headings += ['Total']
-            table_widths += [10]
+            table_headings += ['Total', 'Tie Break']
+            table_widths += [10, 10]
+
         table_values[idx] += [PARTICIPANTS.total_scores[idx]]
+        table_values[idx] += [PARTICIPANTS.tie_break_scores[idx]]
 
     ###  converting table_values to a structured array
     table_values_struc = numpy.array([tuple(row) for row in table_values], 
                                      dtype=[(field, 'U50') for field in table_headings])
 
-    standings_table = sg.Table(values=numpy.sort(table_values_struc, order=['Total', 'Rating'])[::-1].tolist(), 
+    standings_table = sg.Table(values=numpy.sort(table_values_struc, order=['Total', 'Tie Break'])[::-1].tolist(), 
                                headings=table_headings, 
                                col_widths=table_widths,
                                size=(900, 250),
@@ -502,35 +504,45 @@ def popupCustomPairings():
 
 def save_tournament_results_csv():
 
+    ###  extracting results
+    table_headings = ['seed', 'name', 'rating']
+    table_values = PARTICIPANTS.get_roster_list(integer_rating=True)
+
+    for idx in PARTICIPANTS.idx:
+
+        for i_round in range(len(PARTICIPANTS.all_round_scores)):
+
+            if idx == 0:
+                table_headings += ['opponent_%i'%(i_round+1), 'score_%i'%(i_round+1)]
+            table_values[idx] += [PARTICIPANTS.opponents[i_round][idx], PARTICIPANTS.all_round_scores[i_round][idx]]
+
+        if idx == 0:
+            table_headings += ['total', 'tie_break']
+
+        table_values[idx] += [PARTICIPANTS.total_scores[idx]]
+        table_values[idx] += [PARTICIPANTS.tie_break_scores[idx]]
+
+    ###  converting table_values to a structured array
+    table_values_struc = numpy.array([tuple(row) for row in table_values], 
+                                     dtype=[(field, 'U50') for field in table_headings])
+
+
     ###  file name to store tournament results
     ctime = time.localtime()
     fname_results = 'TOURNAMENT_RESULTS__'
     fname_results += '%4i-%02i-%02i.csv' % (ctime.tm_year, ctime.tm_mon, ctime.tm_mday)
 
+    ###  writing to file
     with open(fname_results, 'w') as fopen:
 
         ###  writing column names
-        fopen.write('seed,name,rating')
-        for i_round in range(len(PARTICIPANTS.all_round_scores)):
-            fopen.write(',opponent_%i,score_%i' % (i_round+1, i_round+1))
-        fopen.write(',total\n')
+        fopen.write(','.join(table_headings))
+        fopen.write('\n')
 
         ###  writing a row for each participant
-        for i_player in numpy.argsort(PARTICIPANTS.total_scores)[::-1]:
-
-            fopen.write('%i,' % (PARTICIPANTS.idx[i_player]+1))
-            fopen.write('%s,' % PARTICIPANTS.names[i_player])
-            fopen.write('%i' % PARTICIPANTS.ratings[i_player])
-
-            for i_round in range(len(PARTICIPANTS.all_round_scores)):
-                if PARTICIPANTS.opponents[i_round][i_player] == 'BYE':
-                    opp = 'BYE'
-                else:
-                    opp = PARTICIPANTS.opponents[i_round][i_player] + 1
-                fopen.write(',%s,%.2f' % (opp, PARTICIPANTS.all_round_scores[i_round][i_player]))
-
-            fopen.write(',%.2f\n' % PARTICIPANTS.total_scores[i_player])
-
+        for row in numpy.sort(table_values_struc, order=['total', 'tie_break'])[::-1]:
+            fopen.write(','.join(row))
+            fopen.write('\n')
 
 
 
@@ -892,6 +904,7 @@ while True:
         PARTICIPANTS.total_scores += PARTICIPANTS.current_round_scores
         PARTICIPANTS.all_round_scores.append(PARTICIPANTS.current_round_scores.tolist())
         PARTICIPANTS.current_round_scores = numpy.array([numpy.nan]*PARTICIPANTS.n_participants)
+        PARTICIPANTS.calc_tie_break_scores()
 
         ###  saving tournament results to csv
         save_tournament_results_csv()
@@ -1103,37 +1116,39 @@ while True:
     ###  end tournament
     elif ('END TOURNAMENT' in event):
 
-        ###  confirm that all scores have been entered
+        ###  check that all scores have been entered
+        ###  if not then ask to discard current round
         if numpy.isnan(PARTICIPANTS.current_round_scores).any():
-            sg.popup_no_titlebar('Round not finished', 
-                                 font=(FONT, 16), 
-                                 auto_close=True, 
-                                 auto_close_duration=3)
-            continue
 
+            confirmation = sg.popup_yes_no('Round not finished\nDiscard current round and end tournament ?', 
+                                           title='End Tournament ?', 
+                                           font=(FONT, 18))
 
-        ###  confirm that user actually wants to end the tournament
-        confirmation = sg.popup_yes_no('Are you sure you want to\nend the tournament ?', 
-                                       title='End Tournament ?', 
-                                       font=(FONT, 18))
+            if confirmation != 'Yes':
+                continue
 
-        if confirmation != 'Yes':
-            continue
+        else:
 
+            ###  confirm that user actually wants to end the tournament
+            confirmation = sg.popup_yes_no('Are you sure you want to\nend the tournament ?', 
+                                           title='End Tournament ?', 
+                                           font=(FONT, 18))
 
-        ###  logging scores from finished round and prepping for next
-        PARTICIPANTS.total_scores += PARTICIPANTS.current_round_scores
-        PARTICIPANTS.all_round_scores.append(PARTICIPANTS.current_round_scores.tolist())
-        PARTICIPANTS.current_round_scores = numpy.array([numpy.nan]*PARTICIPANTS.n_participants)
+            if confirmation != 'Yes':
+                continue
 
-        ###  saving tournament results to csv
-        save_tournament_results_csv()
+            ###  logging scores from finished round and prepping for next
+            PARTICIPANTS.total_scores += PARTICIPANTS.current_round_scores
+            PARTICIPANTS.all_round_scores.append(PARTICIPANTS.current_round_scores.tolist())
+            PARTICIPANTS.current_round_scores = numpy.array([numpy.nan]*PARTICIPANTS.n_participants)
+            PARTICIPANTS.calc_tie_break_scores()
+
+            ###  saving tournament results to csv
+            save_tournament_results_csv()
 
         ###  closing main window and opening standings window
         window.close()
         popupStandings()
-
-
 
 
 window.close()

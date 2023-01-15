@@ -87,9 +87,6 @@ class ParticipantRoster:
 
             self.tie_break_scores[idx] = tie_break_score
 
-
-
-
     def get_roster_list(self, integer_rating=True):
         '''
         Returns a list of the players, ratings, and scores in a format compatible with PySimpleGUI
