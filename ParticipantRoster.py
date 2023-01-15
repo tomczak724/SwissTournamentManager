@@ -43,6 +43,7 @@ class ParticipantRoster:
 
     def add_participant(self, name, rating):
         self.n_participants += 1
+        self.idx = numpy.arange(self.n_participants)
         self.names = numpy.append(self.names, name)
         self.ratings = numpy.append(self.ratings, rating)
         self.total_scores = numpy.append(self.total_scores, 0)
@@ -55,6 +56,7 @@ class ParticipantRoster:
         self.names = numpy.concatenate([self.names[:idx], self.names[idx+1:]])
         self.ratings = numpy.concatenate([self.ratings[:idx], self.ratings[idx+1:]])
         self.total_scores = self.total_scores[:-1]
+        self.tie_break_scores = self.tie_break_scores[:-1]
         self.idx = self.idx[:-1]
         self.n_participants -= 1
 

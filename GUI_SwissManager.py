@@ -138,7 +138,7 @@ def popupStandings():
     table_values_struc = numpy.array([tuple(row) for row in table_values], 
                                      dtype=[(field, 'U50') for field in table_headings])
 
-    standings_table = sg.Table(values=numpy.sort(table_values_struc, order=['Total', 'Tie Break'])[::-1].tolist(), 
+    standings_table = sg.Table(values=numpy.sort(table_values_struc, order=['Total', 'Tie Break', 'Rating'])[::-1].tolist(), 
                                headings=table_headings, 
                                col_widths=table_widths,
                                size=(900, 250),
@@ -539,8 +539,12 @@ def save_tournament_results_csv():
         fopen.write(','.join(table_headings))
         fopen.write('\n')
 
+
+        ###  TO DO: make sure array sorts scores as floats and not strings
+
+
         ###  writing a row for each participant
-        for row in numpy.sort(table_values_struc, order=['total', 'tie_break'])[::-1]:
+        for row in numpy.sort(table_values_struc, order=['total', 'tie_break', 'rating'])[::-1]:
             fopen.write(','.join(row))
             fopen.write('\n')
 
@@ -627,6 +631,23 @@ while True:
 
     if event == sg.WIN_CLOSED:
         break
+
+    ###  clear roster
+    elif (CURRENT_ROUND == 0) and (event == '-CLEAR ROSTER-'):
+
+        confirmation = sg.popup_yes_no('Clear entire roster ?', 
+                                       title='Clear Roster', 
+                                       font=(FONT, 16))
+
+        if confirmation != 'Yes':
+            continue
+
+        ###  removing all participants
+        for idx in PARTICIPANTS.idx:
+            PARTICIPANTS.remove_participant(0)
+
+        window['-REGISTRATION TABLE-'].update(values=PARTICIPANTS.get_roster_list(integer_rating=True))
+        window.refresh()
 
     ###  add a new player
     elif (CURRENT_ROUND == 0) and (event == '-ADD NEW PLAYER-'):
