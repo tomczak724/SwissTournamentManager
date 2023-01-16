@@ -343,12 +343,18 @@ def popupCustomPairings(participants, current_round, font='bitstream charter'):
             if confirmation == 'No':
                 continue
 
-            ###  iterating over nominal table assignments
-            candidate_byes = []
-            for i_table in range(n_tables):
 
-                idx_player1 = i_table
-                idx_player2 = nominal_pairings[idx_player1]
+            ###  iterating over nominal table assignments
+            i_table = 0
+            str_pairings = []
+            candidate_byes = []
+            for idx_player1, idx_player2 in enumerate(nominal_pairings):
+
+                ###  skip if this pair is already accounted for
+                str1_pair = '%sv%s' % (idx_player1, idx_player2)
+                str2_pair = '%sv%s' % (idx_player2, idx_player1)
+                if (str1_pair in str_pairings) or (str2_pair in str_pairings):
+                    continue
 
                 if idx_player2 == 'BYE':
                     candidate_byes.append('%.1f   %s' % (participants.total_scores[idx_player1], participants.names[idx_player1]))
@@ -360,6 +366,8 @@ def popupCustomPairings(participants, current_round, font='bitstream charter'):
                 window_custom_pairings['-BUTTONMENU TABLE%i PLAYER1-'%(i_table+1)].update(menu_definition=['junk', [' ']])
                 window_custom_pairings['-BUTTONMENU TABLE%i PLAYER2-'%(i_table+1)].update(menu_definition=['junk', [' ']])
 
+                i_table += 1
+                str_pairings += [str1_pair, str2_pair]
 
             ###  populating BYE table
             window_custom_pairings['-TABLE BYE ASSIGNMENT-'].update(values=[['X', ' '*10+cand] for cand in candidate_byes])
