@@ -6,6 +6,8 @@ import PySimpleGUI as sg
 def popupEditPlayer(current_name, current_rating, font='bitstream charter'):
 
     popup = sg.Window('Edit Player',
+                      keep_on_top=True, 
+                      modal=True, 
                       layout=[
                               [sg.Column(layout=[[sg.Text('Name', font=(font, 14))], 
                                                  [sg.InputText(size=(25, 3), default_text=current_name, border_width=2, font=(font, 14), key='-EDIT PLAYER NAME-')]]), 
@@ -47,6 +49,8 @@ def popupEnterScores(name1, name2, font='bitstream charter'):
         default_text2, disabled2 = '0', True
 
     popup = sg.Window('Enter Scores', 
+                      keep_on_top=True, 
+                      modal=True, 
                       layout=[
                               [sg.Column(layout=[[sg.Text(name1, font=(font, 14))], 
                                                  [sg.Text(name2, font=(font, 14))]]), 
@@ -93,7 +97,7 @@ def popupEnterScores(name1, name2, font='bitstream charter'):
 def popupStandings(participants, font='bitstream charter'):
 
     table_headings = ['', 'Name', 'Rating']
-    table_fields = [('', 'U50'), ('Name', 'U50'), ('Rating', 'f')]
+    table_fields = [('', 'U50'), ('Name', 'U50'), ('Rating', 'i')]
     table_widths = [3, 20, 7]
     table_values = participants.get_roster_list(integer_rating=True)
 
@@ -137,7 +141,8 @@ def popupStandings(participants, font='bitstream charter'):
                                  layout=[[standings_table]], 
                                  size=(850, 670), 
                                  element_justification='center', 
-                                 resizable=True)
+                                 resizable=True, 
+                                 modal=True)
 
 
     while True:
@@ -250,12 +255,13 @@ def popupCustomPairings(participants, current_round, font='bitstream charter'):
                            ]
 
     window_custom_pairings = sg.Window('Generate Custom Pairings for Round %i' % current_round, 
-                                     [[buttons], [layout_edit_parings]], 
-                                     location=(50, 0), 
-                                     size=(1050, 670), 
-                                     sbar_arrow_width=1,
-                                     element_justification='center', 
-                                     resizable=True)
+                                       [[buttons], [layout_edit_parings]], 
+                                       location=(50, 0), 
+                                       size=(1050, 670), 
+                                       sbar_arrow_width=1,
+                                       element_justification='center', 
+                                       resizable=True, 
+                                       modal=True)
 
     while True:
 

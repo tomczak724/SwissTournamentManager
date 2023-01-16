@@ -160,7 +160,8 @@ while True:
 
         confirmation = sg.popup_yes_no('Clear entire roster ?', 
                                        title='Clear Roster', 
-                                       font=(FONT, 16))
+                                       font=(FONT, 16), 
+                                       modal=True)
 
         if confirmation != 'Yes':
             continue
@@ -209,7 +210,8 @@ while True:
         idx_player = values['-REGISTRATION TABLE-'][0]
         confirmation = sg.popup_yes_no('Want to remove %s ?' % PARTICIPANTS.names[idx_player], 
                                        title='Remove Player', 
-                                       font=(FONT, 14))
+                                       font=(FONT, 14), 
+                                       modal=True)
 
         if confirmation == 'Yes':
             PARTICIPANTS.remove_participant(idx_player)
@@ -221,7 +223,8 @@ while True:
         ###  confirm that user actually wants to start round 1
         confirmation = sg.popup_yes_no('Ready to start Round 1 ?', 
                                        title='Start Tournament', 
-                                       font=(FONT, 18))
+                                       font=(FONT, 18), 
+                                       modal=True)
 
         if confirmation != 'Yes':
             continue
@@ -423,14 +426,16 @@ while True:
             sg.popup_no_titlebar('Round not finished', 
                                  font=(FONT, 16), 
                                  auto_close=True, 
-                                 auto_close_duration=3)
+                                 auto_close_duration=3, 
+                                 modal=True)
             continue
 
 
         ###  confirm that user actually wants to start next round
         confirmation = sg.popup_yes_no('Ready to start Round %i ?' % (CURRENT_ROUND+1), 
                                        title='Start Tournament', 
-                                       font=(FONT, 18))
+                                       font=(FONT, 18), 
+                                       modal=True)
 
         if confirmation != 'Yes':
             continue
@@ -665,7 +670,8 @@ while True:
 
             confirmation = sg.popup_yes_no('Round not finished\nDiscard current round and end tournament ?', 
                                            title='End Tournament ?', 
-                                           font=(FONT, 18))
+                                           font=(FONT, 18), 
+                                           modal=True)
 
             if confirmation != 'Yes':
                 continue
@@ -675,7 +681,8 @@ while True:
             ###  confirm that user actually wants to end the tournament
             confirmation = sg.popup_yes_no('Are you sure you want to\nend the tournament ?', 
                                            title='End Tournament ?', 
-                                           font=(FONT, 18))
+                                           font=(FONT, 18), 
+                                           modal=True)
 
             if confirmation != 'Yes':
                 continue
