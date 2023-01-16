@@ -115,6 +115,7 @@ def popupEnterScores(name1, name2):
 def popupStandings():
 
     table_headings = ['', 'Name', 'Rating']
+    table_fields = [('', 'U50'), ('Name', 'U50'), ('Rating', 'f')]
     table_widths = [3, 20, 7]
     table_values = PARTICIPANTS.get_roster_list(integer_rating=True)
 
@@ -124,19 +125,20 @@ def popupStandings():
 
             if idx == 0:
                 table_headings += ['Round %i' % (i_round+1)]
+                table_fields += [('Round %i'%(i_round+1), 'i')]
                 table_widths += [8]
             table_values[idx] += [PARTICIPANTS.all_round_scores[i_round][idx]]
 
         if idx == 0:
             table_headings += ['Total', 'Tie Break']
+            table_fields += [('Total', 'f'), ('Tie Break', 'f')]
             table_widths += [10, 10]
 
         table_values[idx] += [PARTICIPANTS.total_scores[idx]]
         table_values[idx] += [PARTICIPANTS.tie_break_scores[idx]]
 
     ###  converting table_values to a structured array
-    table_values_struc = numpy.array([tuple(row) for row in table_values], 
-                                     dtype=[(field, 'U50') for field in table_headings])
+    table_values_struc = numpy.array([tuple(row) for row in table_values], dtype=table_fields)
 
     standings_table = sg.Table(values=numpy.sort(table_values_struc, order=['Total', 'Tie Break', 'Rating'])[::-1].tolist(), 
                                headings=table_headings, 
@@ -506,6 +508,7 @@ def save_tournament_results_csv():
 
     ###  extracting results
     table_headings = ['seed', 'name', 'rating']
+    table_fields = [('seed', 'U50'), ('name', 'U50'), ('rating', 'f')]
     table_values = PARTICIPANTS.get_roster_list(integer_rating=True)
 
     for idx in PARTICIPANTS.idx:
@@ -514,17 +517,18 @@ def save_tournament_results_csv():
 
             if idx == 0:
                 table_headings += ['opponent_%i'%(i_round+1), 'score_%i'%(i_round+1)]
+                table_fields += [('opponent_%i'%(i_round+1), 'i'), ('score_%i'%(i_round+1), 'f')]
             table_values[idx] += [PARTICIPANTS.opponents[i_round][idx], PARTICIPANTS.all_round_scores[i_round][idx]]
 
         if idx == 0:
             table_headings += ['total', 'tie_break']
+            table_fields += [('total', 'f'), ('tie_break', 'f')]
 
         table_values[idx] += [PARTICIPANTS.total_scores[idx]]
         table_values[idx] += [PARTICIPANTS.tie_break_scores[idx]]
 
     ###  converting table_values to a structured array
-    table_values_struc = numpy.array([tuple(row) for row in table_values], 
-                                     dtype=[(field, 'U50') for field in table_headings])
+    table_values_struc = numpy.array([tuple(row) for row in table_values], dtype=table_fields)
 
 
     ###  file name to store tournament results
@@ -539,13 +543,10 @@ def save_tournament_results_csv():
         fopen.write(','.join(table_headings))
         fopen.write('\n')
 
-
-        ###  TO DO: make sure array sorts scores as floats and not strings
-
-
         ###  writing a row for each participant
         for row in numpy.sort(table_values_struc, order=['total', 'tie_break', 'rating'])[::-1]:
-            fopen.write(','.join(row))
+            row_str = [str(val) for val in row]
+            fopen.write(','.join(row_str))
             fopen.write('\n')
 
 
@@ -919,7 +920,6 @@ while True:
         ###  logging previous opponent pairings
         for p0, p1 in enumerate(PARTICIPANTS.opponents[CURRENT_ROUND-1]):
             PARTICIPANTS.all_prev_pairings.append('%sv%s' % (p0, p1))
-            PARTICIPANTS.all_prev_pairings.append('%sv%s' % (p1, p0))
 
         ###  logging scores from finished round and prepping for next
         PARTICIPANTS.total_scores += PARTICIPANTS.current_round_scores
