@@ -158,7 +158,7 @@ while True:
     ###  clear roster
     elif (CURRENT_ROUND == 0) and (event == '-CLEAR ROSTER-'):
 
-        confirmation = sg.popup_yes_no('Clear entire roster ?', 
+        confirmation = sg. _yes_no('Clear entire roster ?', 
                                        title='Clear Roster', 
                                        font=(FONT, 16), 
                                        modal=True)
@@ -252,12 +252,12 @@ while True:
         for i_pair, (p0, p1) in enumerate(pairings):
 
             if (p1 == 'BYE'):
-                vals = [[p0+1, PARTICIPANTS.names[p0], ''], ['', p1, '']]
+                vals = [[PARTICIPANTS.total_scores[p0], PARTICIPANTS.names[p0], ''], ['', p1, '']]
             else:
-                vals = [[p0+1, PARTICIPANTS.names[p0], ''], [p1+1, PARTICIPANTS.names[p1], '']]
+                vals = [[PARTICIPANTS.total_scores[p0], PARTICIPANTS.names[p0], ''], [PARTICIPANTS.total_scores[p1], PARTICIPANTS.names[p1], '']]
 
             t = sg.Table(values=vals, 
-                         headings=['', 'Table %i' % (i_pair+1), 'Score'], 
+                         headings=['', 'Table %i' % (i_pair+1), 'Result'], 
                          size=(300, 2),
                          font=(FONT, 12),
                          pad=10,
@@ -401,8 +401,11 @@ while True:
 
         ###  grabing values from pairing table
         table_values = window[event[0]].Values
-        idx1, name1, junk = table_values[0]
-        idx2, name2, junk = table_values[1]
+        total_score_1, name1, junk = table_values[0]
+        total_score_2, name2, junk = table_values[1]
+
+        idx1 = PARTICIPANTS.names.tolist().index(name1)
+        idx2 = PARTICIPANTS.names.tolist().index(name2)
 
         ###  prompt to enter scores
         score1, score2 = Popups.popupEnterScores(name1, name2)
@@ -414,9 +417,9 @@ while True:
             window[event[0]].update(values=table_values)
 
             if name1 != 'BYE':
-                PARTICIPANTS.current_round_scores[idx1-1] = score1
+                PARTICIPANTS.current_round_scores[idx1] = score1
             if name2 != 'BYE':
-                PARTICIPANTS.current_round_scores[idx2-1] = score2
+                PARTICIPANTS.current_round_scores[idx2] = score2
 
     ###  start next round
     elif ('START NEXT ROUND' in event):
@@ -603,9 +606,9 @@ while True:
 
             ###  extract opponent names for table info
             if (idx_player2 == 'BYE'):
-                vals = [[idx_player1+1, PARTICIPANTS.names[idx_player1], ''], ['', 'BYE', '']]
+                vals = [[PARTICIPANTS.total_scores[idx_player1], PARTICIPANTS.names[idx_player1], ''], ['', 'BYE', '']]
             else:
-                vals = [[idx_player1+1, PARTICIPANTS.names[idx_player1], ''], [idx_player2+1, PARTICIPANTS.names[idx_player2], '']]
+                vals = [[PARTICIPANTS.total_scores[idx_player1], PARTICIPANTS.names[idx_player1], ''], [PARTICIPANTS.total_scores[idx_player2], PARTICIPANTS.names[idx_player2], '']]
 
             ###  skip if this pair is already accounted for
             str1_pair = '%sv%s' % (idx_player1, idx_player2)
