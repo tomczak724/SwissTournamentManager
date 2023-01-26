@@ -39,7 +39,7 @@ def save_tournament_results_csv():
 
             if idx == 0:
                 table_headings += ['opponent_%i'%(i_round+1), 'score_%i'%(i_round+1)]
-                table_fields += [('opponent_%i'%(i_round+1), 'i'), ('score_%i'%(i_round+1), 'f')]
+                table_fields += [('opponent_%i'%(i_round+1), 'U50'), ('score_%i'%(i_round+1), 'f')]
             table_values[idx] += [PARTICIPANTS.opponents[i_round][idx], PARTICIPANTS.all_round_scores[i_round][idx]]
 
         if idx == 0:
@@ -324,11 +324,11 @@ while True:
 
             ###  extract opponent names for table info
             if idx_player2 == 'BYE':
-                vals = [[idx_player1+1, PARTICIPANTS.names[idx_player1], ''], ['', 'BYE', '']]
+                vals = [[PARTICIPANTS.total_scores[idx_player1], PARTICIPANTS.names[idx_player1], ''], ['', 'BYE', '']]
                 str1_pair = '%ivBYE' % idx_player1
                 str2_pair = 'BYEv%i' % idx_player1
             else:
-                vals = [[idx_player1+1, PARTICIPANTS.names[idx_player1], ''], [idx_player2+1, PARTICIPANTS.names[idx_player2], '']]
+                vals = [[PARTICIPANTS.total_scores[idx_player1], PARTICIPANTS.names[idx_player1], ''], [PARTICIPANTS.total_scores[idx_player2], PARTICIPANTS.names[idx_player2], '']]
                 str1_pair = '%iv%i' % (idx_player1, idx_player2)
                 str2_pair = '%iv%i' % (idx_player2, idx_player1)
 
@@ -394,7 +394,7 @@ while True:
         idx_round = int(idx_round.strip('R'))
         idx_table = int(idx_table.split('-')[0])
 
-        ###  only continue if on round = CURRENT_ROUND
+        ###  only continue if tab round = CURRENT_ROUND
         if idx_round != CURRENT_ROUND:
             print('Round %i is complete' % idx_round)
             continue
@@ -404,8 +404,10 @@ while True:
         total_score_1, name1, junk = table_values[0]
         total_score_2, name2, junk = table_values[1]
 
-        idx1 = PARTICIPANTS.names.tolist().index(name1)
-        idx2 = PARTICIPANTS.names.tolist().index(name2)
+        if name1 != 'BYE':
+            idx1 = PARTICIPANTS.names.tolist().index(name1)
+        if name2 != 'BYE':
+            idx2 = PARTICIPANTS.names.tolist().index(name2)
 
         ###  prompt to enter scores
         score1, score2 = Popups.popupEnterScores(name1, name2)

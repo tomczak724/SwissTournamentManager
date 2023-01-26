@@ -368,9 +368,9 @@ def popupCustomPairings(participants, current_round, font='bitstream charter'):
                     window_custom_pairings['-BUTTONMENU TABLE%i PLAYER1-'%(i_table+1)].update(button_text='%.1f   %s' % (participants.total_scores[idx_player1], participants.names[idx_player1]))
                     window_custom_pairings['-BUTTONMENU TABLE%i PLAYER2-'%(i_table+1)].update(button_text='%.1f   %s' % (participants.total_scores[idx_player2], participants.names[idx_player2]))
 
-                ###  updating buttonmenu options
-                window_custom_pairings['-BUTTONMENU TABLE%i PLAYER1-'%(i_table+1)].update(menu_definition=['junk', [' ']])
-                window_custom_pairings['-BUTTONMENU TABLE%i PLAYER2-'%(i_table+1)].update(menu_definition=['junk', [' ']])
+                    ###  updating buttonmenu options
+                    window_custom_pairings['-BUTTONMENU TABLE%i PLAYER1-'%(i_table+1)].update(menu_definition=['junk', [' ']])
+                    window_custom_pairings['-BUTTONMENU TABLE%i PLAYER2-'%(i_table+1)].update(menu_definition=['junk', [' ']])
 
                 i_table += 1
                 str_pairings += [str1_pair, str2_pair]
