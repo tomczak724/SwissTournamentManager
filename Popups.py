@@ -195,7 +195,7 @@ def popupCustomPairings(participants, current_round, font='bitstream charter'):
         layout_pairings[-4].append(sg.Text(' ', pad=0, font=(font, 12), key='-WHITESPACE %iD'%(idx+1)))
         layout_pairings[-3].append(t) 
         layout_pairings[-2].append(sg.ButtonMenu(button_text=' ', 
-                                                 menu_def=['junk', [' ']+player_list], 
+                                                 menu_def=['junk', ['remove player']+player_list], 
                                                  pad=0, 
                                                  key='-BUTTONMENU TABLE%i PLAYER1-'%(idx+1), 
                                                  size=(28, 1), 
@@ -203,7 +203,7 @@ def popupCustomPairings(participants, current_round, font='bitstream charter'):
                                                  text_color='white', 
                                                  font=(font, 12)))
         layout_pairings[-1].append(sg.ButtonMenu(button_text=' ', 
-                                                 menu_def=['junk', [' ']+player_list], 
+                                                 menu_def=['junk', ['remove player']+player_list], 
                                                  pad=0, 
                                                  key='-BUTTONMENU TABLE%i PLAYER2-'%(idx+1), 
                                                  size=(28, 1), 
@@ -290,16 +290,19 @@ def popupCustomPairings(participants, current_round, font='bitstream charter'):
 
             ###  removing chosen player from player_list
             p = values[event]
-            if p != ' ':
+            if p != 'remove player':
                 junk = player_list.pop(player_list.index(p))
 
             ###  assigning chosen player to slot
-            window_custom_pairings[event].update(button_text=p)
+            if p == 'remove player':
+                window_custom_pairings[event].update(button_text=' ')
+            else:
+                window_custom_pairings[event].update(button_text=p)
 
             ###  updating buttonmenu options
             for k in values.keys():
                 if 'BUTTONMENU TABLE' in k:
-                    window_custom_pairings[k].update(menu_definition=['junk', [' ']+player_list])
+                    window_custom_pairings[k].update(menu_definition=['junk', ['remove player']+player_list])
                 elif 'BUTTONMENU ASSIGN BYE' in k:
                     window_custom_pairings[k].update(menu_definition=['junk', player_list])
 
@@ -313,12 +316,12 @@ def popupCustomPairings(participants, current_round, font='bitstream charter'):
 
             ###  adding to candidate_byes and updating BYE table
             candidate_byes.append(p)
-            window_custom_pairings['-TABLE BYE ASSIGNMENT-'].update(values=[['X', ' '*10+cand] for cand in candidate_byes])
+            window_custom_pairings['-TABLE BYE ASSIGNMENT-'].update(values=[['X', ' '+cand] for cand in candidate_byes])
 
             ###  updating buttonmenu options
             for k in values.keys():
                 if 'BUTTONMENU TABLE' in k:
-                    window_custom_pairings[k].update(menu_definition=['junk', [' ']+player_list])
+                    window_custom_pairings[k].update(menu_definition=['junk', ['remove player']+player_list])
                 elif 'BUTTONMENU ASSIGN BYE' in k:
                     window_custom_pairings[k].update(menu_definition=['junk', player_list])
 
@@ -369,8 +372,8 @@ def popupCustomPairings(participants, current_round, font='bitstream charter'):
                     window_custom_pairings['-BUTTONMENU TABLE%i PLAYER2-'%(i_table+1)].update(button_text='%.1f   %s' % (participants.total_scores[idx_player2], participants.names[idx_player2]))
 
                     ###  updating buttonmenu options
-                    window_custom_pairings['-BUTTONMENU TABLE%i PLAYER1-'%(i_table+1)].update(menu_definition=['junk', [' ']])
-                    window_custom_pairings['-BUTTONMENU TABLE%i PLAYER2-'%(i_table+1)].update(menu_definition=['junk', [' ']])
+                    window_custom_pairings['-BUTTONMENU TABLE%i PLAYER1-'%(i_table+1)].update(menu_definition=['junk', ['remove player']])
+                    window_custom_pairings['-BUTTONMENU TABLE%i PLAYER2-'%(i_table+1)].update(menu_definition=['junk', ['remove player']])
 
                 i_table += 1
                 str_pairings += [str1_pair, str2_pair]
@@ -398,7 +401,7 @@ def popupCustomPairings(participants, current_round, font='bitstream charter'):
             ###  removing names from buttonmenus and BYE table and updating options
             for k in values.keys():
                 if 'BUTTONMENU TABLE' in k:
-                    window_custom_pairings[k].update(button_text=' ', menu_definition=['junk', [' ']+player_list])
+                    window_custom_pairings[k].update(button_text=' ', menu_definition=['junk', ['remove player']+player_list])
                 elif 'BUTTONMENU ASSIGN BYE' in k:
                     window_custom_pairings[k].update(menu_definition=['junk', player_list])
 

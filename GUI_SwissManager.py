@@ -481,7 +481,7 @@ while True:
         ###  reversing order so that highest score comes first
         scores = numpy.sort(scores)[::-1]
 
-        ###  constructing score groups (SG)
+        ###  constructing score groups (SGs)
         score_groups = [PARTICIPANTS.idx[PARTICIPANTS.total_scores==s].tolist() for s in scores]
 
         ###  empty array to hold candidate pairing
@@ -513,6 +513,7 @@ while True:
                     s1_candidate = s1
                     s2_candidate = s2_t
                     break
+
 
             ###  if no valid transposition of s2 exists, test swapping residents between s1 and s2
             if (len(score_group) > 1) and (n_violations > 0):
