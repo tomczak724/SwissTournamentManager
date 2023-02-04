@@ -114,7 +114,7 @@ def popupStandings(participants, font='bitstream charter'):
         if idx == 0:
             table_headings += ['Total', 'Tie Break']
             table_fields += [('Total', 'f'), ('Tie Break', 'f')]
-            table_widths += [10, 10]
+            table_widths += [8, 10]
 
         table_values[idx] += [participants.total_scores[idx]]
         table_values[idx] += [participants.tie_break_scores[idx]]
@@ -125,8 +125,8 @@ def popupStandings(participants, font='bitstream charter'):
     standings_table = sg.Table(values=numpy.sort(table_values_struc, order=['Total', 'Tie Break', 'Rating'])[::-1].tolist(), 
                                headings=table_headings, 
                                col_widths=table_widths,
-                               size=(900, 250),
-                               font=(font, 12),
+                               size=(1000, 250),
+                               font=(font, 14),
                                auto_size_columns=False,
                                justification='center',
                                key='-STANDINGS TABLE-',
@@ -139,7 +139,7 @@ def popupStandings(participants, font='bitstream charter'):
 
     window_standings = sg.Window(title='Standings', 
                                  layout=[[standings_table]], 
-                                 size=(850, 670), 
+                                 size=(1100, 670), 
                                  element_justification='center', 
                                  resizable=True, 
                                  modal=True)
@@ -368,14 +368,16 @@ def popupCustomPairings(participants, current_round, font='bitstream charter'):
                 if idx_player2 == 'BYE':
                     candidate_byes.append('%.1f   %s' % (participants.total_scores[idx_player1], participants.names[idx_player1]))
                 else:
-                    window_custom_pairings['-BUTTONMENU TABLE%i PLAYER1-'%(i_table+1)].update(button_text='%.1f   %s' % (participants.total_scores[idx_player1], participants.names[idx_player1]))
-                    window_custom_pairings['-BUTTONMENU TABLE%i PLAYER2-'%(i_table+1)].update(button_text='%.1f   %s' % (participants.total_scores[idx_player2], participants.names[idx_player2]))
+                    i_table += 1
+
+                    window_custom_pairings['-BUTTONMENU TABLE%i PLAYER1-'%i_table].update(button_text='%.1f   %s' % (participants.total_scores[idx_player1], participants.names[idx_player1]))
+                    window_custom_pairings['-BUTTONMENU TABLE%i PLAYER2-'%i_table].update(button_text='%.1f   %s' % (participants.total_scores[idx_player2], participants.names[idx_player2]))
 
                     ###  updating buttonmenu options
-                    window_custom_pairings['-BUTTONMENU TABLE%i PLAYER1-'%(i_table+1)].update(menu_definition=['junk', ['remove player']])
-                    window_custom_pairings['-BUTTONMENU TABLE%i PLAYER2-'%(i_table+1)].update(menu_definition=['junk', ['remove player']])
+                    window_custom_pairings['-BUTTONMENU TABLE%i PLAYER1-'%i_table].update(menu_definition=['junk', ['remove player']])
+                    window_custom_pairings['-BUTTONMENU TABLE%i PLAYER2-'%i_table].update(menu_definition=['junk', ['remove player']])
 
-                i_table += 1
+
                 str_pairings += [str1_pair, str2_pair]
 
             ###  populating BYE table
