@@ -453,6 +453,8 @@ while True:
         ###  removing custom pairings and start round buttons from finished round
         window['-CUSTOM PAIRINGS %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)].update(visible=False)
         window['-START NEXT ROUND %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)].update(visible=False)
+        if CURRENT_ROUND > 1:
+            window['-END TOURNAMENT %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)].update(visible=False)
 
 
         ###  disabling score fields for finished round
