@@ -272,7 +272,7 @@ while True:
                                 disabled=False, 
                                 font=(FONT, 14), 
                                 justification='center', 
-                                key='-SUBMIT SCORE PLAYER 1 TABLE %i ROUND 1-' % i_pair)
+                                key='-SUBMIT SCORE PLAYER 1 TABLE %i ROUND 1_%i-' % (i_pair, ROUND_RESET_COUNTER))
 
             if (p1 == 'BYE'):
                 disabled = True
@@ -293,7 +293,7 @@ while True:
                                 disabled=disabled, 
                                 font=(FONT, 14), 
                                 justification='center', 
-                                key='-SUBMIT SCORE PLAYER 2 TABLE %i ROUND 1-' % i_pair)
+                                key='-SUBMIT SCORE PLAYER 2 TABLE %i ROUND 1_%i-' % (i_pair, ROUND_RESET_COUNTER))
 
             t4 = sg.Text(rating, font=(FONT, 14), size=(10, 1), pad=(0, 3), justification='center')
             t5 = sg.Text(score, font=(FONT, 14), size=(4, 1), pad=(0, 3), justification='center')
@@ -338,66 +338,81 @@ while True:
         if custom_opponents is None:
             continue
 
+        ###  incrementing round reset counter
+        ROUND_RESET_COUNTER += 1
 
         ###  updating the last pairing in PARTICIPANTS
         PARTICIPANTS.opponents[-1] = custom_opponents
 
         ###  generating layout for pairings
-        layout_pairings = []
+        layout_pairings = [[sg.Text('Table', font=(FONT, 14), size=(4, 1), pad=(0, 3), justification='center'), 
+                            sg.Text('Player 1', font=(FONT, 14), size=(20, 1), pad=(0, 3), justification='center'), 
+                            sg.Text('Score', font=(FONT, 14), size=(4, 1), pad=(0, 3), justification='center'), 
+                            sg.Text('Rating', font=(FONT, 14), size=(10, 1), pad=(0, 3), justification='center'), 
+                            sg.Text('Result', font=(FONT, 14), size=(8, 1), pad=(8, 3), justification='center'), 
+                            sg.Text('Rating', font=(FONT, 14), size=(10, 1), pad=(0, 3), justification='center'), 
+                            sg.Text('Score', font=(FONT, 14), size=(4, 1), pad=(0, 3), justification='center'), 
+                            sg.Text('Player 2', font=(FONT, 14), size=(20, 1), pad=(0, 3), justification='center')]]
 
-        i_table = 0
-        str_pairings = []
-        for idx_player1, idx_player2 in enumerate(custom_opponents):
+        layout_pairings.append([sg.HorizontalSeparator()])
 
-            ###  extract opponent names for table info
-            if idx_player2 == 'BYE':
-                vals = [[PARTICIPANTS.total_scores[idx_player1], PARTICIPANTS.names[idx_player1], ''], ['', 'BYE', '']]
-                str1_pair = '%ivBYE' % idx_player1
-                str2_pair = 'BYEv%i' % idx_player1
+        pairings = []
+        for i, opp in enumerate(custom_opponents):
+            if (opp == 'BYE') or (i < opp):
+                pairings.append([i, opp])
+
+        for i_pair, (p0, p1) in enumerate(pairings):
+
+            t0 = sg.Text('%i'%(i_pair+1), font=(FONT, 14), size=(4, 1), pad=(0, 3), justification='center')
+            t1 = sg.Text('%s'%PARTICIPANTS.names[p0], font=(FONT, 14), size=(20, 1), pad=(0, 3), justification='center')
+            t2 = sg.Text('%.1f'%PARTICIPANTS.total_scores[p0], font=(FONT, 14), size=(4, 1), pad=(0, 3), justification='center')
+            t3 = sg.Text('%i'%PARTICIPANTS.ratings[p0], font=(FONT, 14), size=(10, 1), pad=(0, 3), justification='center')
+            inp1 = sg.InputText(size=(4, 1), 
+                                border_width=2, 
+                                pad=(2, 3), 
+                                default_text='', 
+                                disabled=False, 
+                                font=(FONT, 14), 
+                                justification='center', 
+                                key='-SUBMIT SCORE PLAYER 1 TABLE %i ROUND %i_%i-' % (i_pair, CURRENT_ROUND, ROUND_RESET_COUNTER))
+
+            if (p1 == 'BYE'):
+                disabled = True
+                rating = '-'
+                score = '-'
+                name = 'BYE'
             else:
-                vals = [[PARTICIPANTS.total_scores[idx_player1], PARTICIPANTS.names[idx_player1], ''], [PARTICIPANTS.total_scores[idx_player2], PARTICIPANTS.names[idx_player2], '']]
-                str1_pair = '%iv%i' % (idx_player1, idx_player2)
-                str2_pair = '%iv%i' % (idx_player2, idx_player1)
+                disabled = False
+                rating = '%i'%PARTICIPANTS.ratings[p1]
+                score = '%.1f'%PARTICIPANTS.total_scores[p1]
+                name = '%s'%PARTICIPANTS.names[p1]
 
 
-            ###  skip if this pair is already accounted for
-            if (str1_pair in str_pairings) or (str2_pair in str_pairings):
-                continue
+            inp2 = sg.InputText(size=(4, 1), 
+                                border_width=2, 
+                                pad=(2, 3), 
+                                default_text='', 
+                                disabled=disabled, 
+                                font=(FONT, 14), 
+                                justification='center', 
+                                key='-SUBMIT SCORE PLAYER 2 TABLE %i ROUND %i_%i-' % (i_pair, CURRENT_ROUND, ROUND_RESET_COUNTER))
 
-            i_table += 1
-            t = sg.Table(values=vals, 
-                         headings=['', 'Table %i' % i_table, 'Score'], 
-                         size=(300, 2),
-                         font=(FONT, 12),
-                         pad=10,
-                         select_mode=sg.TABLE_SELECT_MODE_NONE,
-                         col_widths=[3, 20, 6],
-                         hide_vertical_scroll=True,
-                         auto_size_columns=False,
-                         justification='center',
-                         key='-PAIRING R%iT%i-' % (CURRENT_ROUND, i_table),
-                         enable_events=True,
-                         enable_click_events=True,
-                         expand_x=False,
-                         expand_y=False)
+            t4 = sg.Text(rating, font=(FONT, 14), size=(10, 1), pad=(0, 3), justification='center')
+            t5 = sg.Text(score, font=(FONT, 14), size=(4, 1), pad=(0, 3), justification='center')
+            t6 = sg.Text(name, font=(FONT, 14), size=(20, 1), pad=(0, 3), justification='center')
 
-            if i_table%2 == 1:
-                layout_pairings.append([])
-
-            layout_pairings[-1].append(t)
-            str_pairings.append(str1_pair)
-            str_pairings.append(str2_pair)
+            row = [t0, t1, t2, t3, inp1, inp2, t4, t5, t6]
+            layout_pairings.append(row)
+            layout_pairings.append([sg.HorizontalSeparator()])
 
 
         ###  creating new tab for current round
-        ROUND_RESET_COUNTER += 1
-        window['-TABGROUP-'].add_tab(sg.Tab(' Round %i ' % CURRENT_ROUND, 
+        window['-TABGROUP-'].add_tab(sg.Tab(' Round 1 ', 
                                             [[sg.Button('Standings', font=(FONT, 16), key='-GET STANDINGS %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)), 
                                               sg.Button('Custom Pairings', font=(FONT, 16), key='-CUSTOM PAIRINGS %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)), 
-                                              sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)), 
-                                              sg.Button('End Tournament', font=(FONT, 16), key='-END TOURNAMENT %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER))], 
+                                              sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER))], 
                                              [sg.Column(layout=layout_pairings, 
-                                                        size=(800, 400), 
+                                                        size=(1100, 400), 
                                                         scrollable=True, 
                                                         vertical_scroll_only=True, 
                                                         sbar_width=1, 
@@ -406,7 +421,6 @@ while True:
                                                         expand_y=True)]], 
                                             key='-TAB ROUND %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER), 
                                             element_justification='center'))
-
 
 
         ###  removing and replacing previous round tab
@@ -421,9 +435,9 @@ while True:
         current_round_scores = [numpy.nan] * PARTICIPANTS.n_participants
         for i_pair, (p0, p1) in enumerate(pairings):
             if p0 != 'BYE':
-                current_round_scores[p0] = values['-SUBMIT SCORE PLAYER 1 TABLE %i ROUND %i-' % (i_pair, CURRENT_ROUND)]
+                current_round_scores[p0] = values['-SUBMIT SCORE PLAYER 1 TABLE %i ROUND %i_%i-' % (i_pair, CURRENT_ROUND, ROUND_RESET_COUNTER)]
             if p1 != 'BYE':
-                current_round_scores[p1] = values['-SUBMIT SCORE PLAYER 2 TABLE %i ROUND %i-' % (i_pair, CURRENT_ROUND)]
+                current_round_scores[p1] = values['-SUBMIT SCORE PLAYER 2 TABLE %i ROUND %i_%i-' % (i_pair, CURRENT_ROUND, ROUND_RESET_COUNTER)]
 
 
         ###  warning if some scores were not entered
@@ -459,8 +473,8 @@ while True:
 
         ###  disabling score fields for finished round
         for i_table, opponents in enumerate(pairings):
-            window['-SUBMIT SCORE PLAYER 1 TABLE %i ROUND %i-'%(i_table, CURRENT_ROUND)].update(disabled=True)
-            window['-SUBMIT SCORE PLAYER 2 TABLE %i ROUND %i-'%(i_table, CURRENT_ROUND)].update(disabled=True)
+            window['-SUBMIT SCORE PLAYER 1 TABLE %i ROUND %i_%i-'%(i_table, CURRENT_ROUND, ROUND_RESET_COUNTER)].update(disabled=True)
+            window['-SUBMIT SCORE PLAYER 2 TABLE %i ROUND %i_%i-'%(i_table, CURRENT_ROUND, ROUND_RESET_COUNTER)].update(disabled=True)
 
 
 
@@ -645,7 +659,7 @@ while True:
                                 disabled=False, 
                                 font=(FONT, 14), 
                                 justification='center', 
-                                key='-SUBMIT SCORE PLAYER 1 TABLE %i ROUND %i-' % (i_pair, CURRENT_ROUND))
+                                key='-SUBMIT SCORE PLAYER 1 TABLE %i ROUND %i_%i-' % (i_pair, CURRENT_ROUND, ROUND_RESET_COUNTER))
 
             if (p1 == 'BYE'):
                 disabled = True
@@ -666,7 +680,7 @@ while True:
                                 disabled=disabled, 
                                 font=(FONT, 14), 
                                 justification='center', 
-                                key='-SUBMIT SCORE PLAYER 2 TABLE %i ROUND %i-' % (i_pair, CURRENT_ROUND))
+                                key='-SUBMIT SCORE PLAYER 2 TABLE %i ROUND %i_%i-' % (i_pair, CURRENT_ROUND, ROUND_RESET_COUNTER))
 
             t4 = sg.Text(rating, font=(FONT, 14), size=(10, 1), pad=(0, 3), justification='center')
             t5 = sg.Text(score, font=(FONT, 14), size=(4, 1), pad=(0, 3), justification='center')

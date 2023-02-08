@@ -514,9 +514,9 @@ def popupCustomPairings(participants, current_round, font='bitstream charter'):
     n_tables = len(nominal_pairings) // 2
 
     layout_pairings = [[sg.Text('Table',    font=(font, 14), border_width=0, size=(7, 1),  pad=(0, 3), justification='center'), 
-                        sg.Text('Player 1', font=(font, 14), border_width=0, size=(20, 1), pad=(0, 3), justification='center'), 
+                        sg.Text('Player 1', font=(font, 14), border_width=0, size=(25, 1), pad=(0, 3), justification='center'), 
                         sg.Text(' ',        font=(font, 14), border_width=0, size=(5, 1),  pad=(0, 3), justification='center'), 
-                        sg.Text('Player 2', font=(font, 14), border_width=0, size=(20, 1), pad=(0, 3), justification='center')]]
+                        sg.Text('Player 2', font=(font, 14), border_width=0, size=(25, 1), pad=(0, 3), justification='center')]]
     layout_pairings.append([sg.HorizontalSeparator()])
 
     for i_table in range(n_tables):
@@ -526,7 +526,7 @@ def popupCustomPairings(participants, current_round, font='bitstream charter'):
                              menu_def=['junk', ['remove player']+player_list], 
                              pad=(0, 3), 
                              key='-BUTTONMENU TABLE%i PLAYER1-'%(i_table+1), 
-                             size=(20, 1), 
+                             size=(25, 1), 
                              border_width=0, 
                              text_color='white', 
                              font=(font, 14)), 
@@ -535,7 +535,7 @@ def popupCustomPairings(participants, current_round, font='bitstream charter'):
                              menu_def=['junk', ['remove player']+player_list], 
                              pad=(0, 3), 
                              key='-BUTTONMENU TABLE%i PLAYER2-'%(i_table+1), 
-                             size=(20, 1), 
+                             size=(25, 1), 
                              border_width=0, 
                              text_color='white', 
                              font=(font, 14))]
@@ -550,11 +550,11 @@ def popupCustomPairings(participants, current_round, font='bitstream charter'):
     bye_table = sg.Table(values=values, 
                          headings=['', 'BYE(s)'], 
                          key='-TABLE BYE ASSIGNMENT-', 
-                         size=(300, 7),
+                         size=(200, 7),
                          font=(font, 12),
                          pad=15,
                          select_mode=sg.TABLE_SELECT_MODE_NONE,
-                         col_widths=[2, 28],
+                         col_widths=[2, 25],
                          hide_vertical_scroll=True,
                          auto_size_columns=False,
                          enable_events=True,
