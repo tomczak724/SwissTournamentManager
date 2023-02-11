@@ -407,7 +407,7 @@ while True:
 
 
         ###  creating new tab for current round
-        window['-TABGROUP-'].add_tab(sg.Tab(' Round 1 ', 
+        window['-TABGROUP-'].add_tab(sg.Tab(' Round %i ' % CURRENT_ROUND, 
                                             [[sg.Button('Standings', font=(FONT, 16), key='-GET STANDINGS %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)), 
                                               sg.Button('Custom Pairings', font=(FONT, 16), key='-CUSTOM PAIRINGS %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER)), 
                                               sg.Button('Start Next Round', font=(FONT, 16), key='-START NEXT ROUND %i_%i-' % (CURRENT_ROUND, ROUND_RESET_COUNTER))], 
