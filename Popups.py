@@ -64,7 +64,7 @@ def popupEditPlayer(current_name, current_rating, font='bitstream charter'):
 
             except ValueError:
                 sg.popup_no_titlebar('Invalid Inputs', 
-                                     font=(font, 12), 
+                                     font=(font, 14), 
                                      auto_close=True, 
                                      auto_close_duration=3)
 
@@ -119,7 +119,7 @@ def popupEnterScores(name1, name2, font='bitstream charter'):
 
             except ValueError:
                 sg.popup_no_titlebar('Invalid Inputs', 
-                                     font=(font, 12), 
+                                     font=(font, 14), 
                                      auto_close=True, 
                                      auto_close_duration=3)
 

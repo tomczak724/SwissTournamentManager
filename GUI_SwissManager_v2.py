@@ -40,7 +40,7 @@ def save_tournament_results_csv():
             if idx == 0:
                 table_headings += ['opponent_%i'%(i_round+1), 'score_%i'%(i_round+1)]
                 table_fields += [('opponent_%i'%(i_round+1), 'U50'), ('score_%i'%(i_round+1), 'f')]
-            table_values[idx] += [PARTICIPANTS.opponents[i_round][idx], PARTICIPANTS.all_round_scores[i_round][idx]]
+            table_values[idx] += [PARTICIPANTS.opponents[i_round][idx]+1, PARTICIPANTS.all_round_scores[i_round][idx]]
 
         if idx == 0:
             table_headings += ['total', 'tie_break']
@@ -618,10 +618,26 @@ while True:
             ###  SCOREGROUP IF NO VALID CANDIDATE PAIRING IS FOUND
             else:
 
-                ###  downfloat to next scoregroup
+                ###  downfloat to next scoregroup if not already on final group
                 if i_score_group < len(score_groups)-1:
                     for idx_downfloater in score_group:
                         score_groups[i_score_group+1] = [idx_downfloater] + score_groups[i_score_group+1]
+
+                ###  else if in final group then ... 
+                else:
+
+                    ###  ... adopt nominal pairing and ...
+                    for idx, idx_opp in zip(s1, s2):
+                        candidate_pairing[idx] = idx_opp
+                        candidate_pairing[idx_opp] = idx
+
+                    ###  ... issue warning to user
+                    sg.popup("Couldn't find valid pairing for lowest score group.\n" + \
+                             "Consider creating a custom pairing.", 
+                             title='Warning', 
+                             font=(FONT, 16), 
+                             modal=True)
+
 
 
         ###  adding valid candidate pairing to PARTICIPANTS
