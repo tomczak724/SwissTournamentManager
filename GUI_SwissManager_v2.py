@@ -16,10 +16,13 @@ ROUND_RESET_COUNTER = 0   # for keeping track of number of times a new round tab
 PARTICIPANTS = ParticipantRoster()
 
 file_participants = 'participants.csv'
+file_participants = 'JP_blitz_tournament_20230216.csv'
 if os.path.exists(file_participants):
     with open(file_participants, 'r') as fopen:
         for line in fopen.readlines():
-            name, rating = line.strip('\n').split(',')
+            #name, rating = line.strip('\n').split(',')
+            name = line.strip('\n').split(',')[1]
+            rating = line.strip('\n').split(',')[2]
             if name.lower() == 'name':
                 continue
 
@@ -40,7 +43,11 @@ def save_tournament_results_csv():
             if idx == 0:
                 table_headings += ['opponent_%i'%(i_round+1), 'score_%i'%(i_round+1)]
                 table_fields += [('opponent_%i'%(i_round+1), 'U50'), ('score_%i'%(i_round+1), 'f')]
-            table_values[idx] += [PARTICIPANTS.opponents[i_round][idx]+1, PARTICIPANTS.all_round_scores[i_round][idx]]
+
+            if isinstance(PARTICIPANTS.opponents[i_round][idx], int):
+                table_values[idx] += [PARTICIPANTS.opponents[i_round][idx]+1, PARTICIPANTS.all_round_scores[i_round][idx]]
+            else:
+                table_values[idx] += [PARTICIPANTS.opponents[i_round][idx], PARTICIPANTS.all_round_scores[i_round][idx]]
 
         if idx == 0:
             table_headings += ['total', 'tie_break']

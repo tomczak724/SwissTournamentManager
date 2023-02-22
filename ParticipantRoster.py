@@ -36,9 +36,14 @@ class ParticipantRoster:
         return ''
 
     def _resort_participants(self):
-        ii = numpy.argsort(self.ratings)
-        self.names = self.names[ii][::-1]
-        self.ratings = self.ratings[ii][::-1]
+
+        a = numpy.array([(i, n, -r) for i, (n, r) in enumerate(zip(self.names, self.ratings))], 
+                        dtype=[('idx', 'i'), ('name', 'U50'), ('rating', 'i')])
+
+        ii = numpy.sort(a, order=['rating', 'name'])['idx']
+
+        self.names = self.names[ii]
+        self.ratings = self.ratings[ii]
         self.idx = numpy.arange(self.n_participants)
 
     def add_participant(self, name, rating):
