@@ -15,19 +15,6 @@ ROUND_RESET_COUNTER = 0   # for keeping track of number of times a new round tab
 
 PARTICIPANTS = ParticipantRoster()
 
-file_participants = 'participants.csv'
-file_participants = 'JP_blitz_tournament_20230216.csv'
-if os.path.exists(file_participants):
-    with open(file_participants, 'r') as fopen:
-        for line in fopen.readlines():
-            #name, rating = line.strip('\n').split(',')
-            name = line.strip('\n').split(',')[1]
-            rating = line.strip('\n').split(',')[2]
-            if name.lower() == 'name':
-                continue
-
-            PARTICIPANTS.add_participant(name, int(rating))
-
 
 def save_tournament_results_csv():
 
@@ -81,7 +68,6 @@ def save_tournament_results_csv():
 
 
 
-
 right_click_menu = ['', ['edit player', 'remove player', 'do nothing']]
 
 registration_table = sg.Table(values=PARTICIPANTS.get_roster_list(integer_rating=True), 
@@ -106,7 +92,8 @@ registration_layout = [ [ registration_table,
                                     vertical_alignment='top', 
                                     layout=[
                                             [sg.Button('Start Round 1', border_width=2, font=(FONT, 18), key='-START ROUND 1-'), 
-                                             sg.Button('Clear Roster', border_width=2, font=(FONT, 18), key='-CLEAR ROSTER-')], 
+                                             sg.Button('Clear Roster', border_width=2, font=(FONT, 18), key='-CLEAR ROSTER-'), 
+                                             sg.FileBrowse('Import Roster', font=(FONT, 18), file_types=(('Text Files', '*.csv'),), enable_events=True, key='-IMPORT ROSTER-', target='-IMPORT ROSTER-')], 
 
                                             [sg.Text('', font=(FONT, 14))], 
                                             [sg.Text('', font=(FONT, 14))], 
@@ -162,10 +149,24 @@ while True:
     if event == sg.WIN_CLOSED:
         break
 
+    ###  import roster from csv
+    elif (CURRENT_ROUND == 0) and (event == '-IMPORT ROSTER-'):
+
+        ###  loading file
+        roster = numpy.loadtxt(values['-IMPORT ROSTER-'], delimiter=',', dtype=str)
+
+        ###  parsing rows and adding participants
+        PARTICIPANTS = ParticipantRoster()
+        for name, rating in roster:
+            if name.lower() != 'name':
+                PARTICIPANTS.add_participant(name, int(rating))
+
+        window['-REGISTRATION TABLE-'].update(values=PARTICIPANTS.get_roster_list(integer_rating=True))
+
     ###  clear roster
     elif (CURRENT_ROUND == 0) and (event == '-CLEAR ROSTER-'):
 
-        confirmation = sg. _yes_no('Clear entire roster ?', 
+        confirmation = sg.popup_yes_no('Clear entire roster ?', 
                                        title='Clear Roster', 
                                        font=(FONT, 16), 
                                        modal=True)
